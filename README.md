@@ -7,10 +7,10 @@ It is an updated version of the [Siggraph 2022 OSL Shaders for RenderMan](https:
 [Open Shading Language](https://github.com/AcademySoftwareFoundation/OpenShadingLanguage) is a project of the [Academy Software Foundation](https://www.aswf.io/projects).
 
 
-Specifically, this repository contains the [`osl`](osl) source code for all shaders and the [`make`](https://www.gnu.org/software/make/) and [`python3`](https://docs.python.org/3/) based build system desribed in the course,
+Specifically, this repository contains the [`osl`](osl) source code for all shaders and the [make](https://www.gnu.org/software/make/manual/) and [python3](https://docs.python.org/3/) based build system desribed in the course,
 with some enhancements from the [Layered Shading (LaSh)](https://github.com/LaikaStudios/LaSh) repository.
 
-While the build system and shaders are configured to use [RenderMan 25](https://rmanwiki.pixar.com/display/REN25/RenderMan+25+Documentation), they will be easily altered to operate in whatever rendering system and application environment you use.
+While the build system's [`Makefile`](Makefile) and [`osl`](osl) shaders are configured to use [RenderMan 25](https://rmanwiki.pixar.com/display/REN25/RenderMan+25+Documentation), they will be easily altered to operate in whatever rendering system and application environment you use.
 
 Documentation is in the [`doc`](doc) directory.
 

@@ -9,9 +9,9 @@ However, here is some additional information about this repositry's content and 
 # Requirements
 * `make`
 * `python3`
-* [RenderMan 25](https://rmanwiki.pixar.com/display/REN25/RenderMan+25+Documentation) was used to develop the shaders and the `make` build system.
+* [RenderMan 25](https://rmanwiki.pixar.com/display/REN25/RenderMan+25+Documentation) was used to develop the shaders and the build system.
 
-Other rendering and application systems can still make use of the [`osl`](./osl/) shading nodes and `make` system with minor alterations.
+Other rendering and application systems can still make use of the [`osl`](./osl/) shading nodes and [make](https://www.gnu.org/software/make/manual/) system with minor alterations.
 
 # Quick Start
 To use the supplied repository content as is:
