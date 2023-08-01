@@ -111,12 +111,6 @@ clean : clean_subdirs
 endif
 
 #
-# Test render.
-#
-testrender :
-	prman $(SRCDIR)/rib/test.rib
-
-#
 # Helpful rules.
 #
 help :

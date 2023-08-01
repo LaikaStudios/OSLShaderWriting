@@ -31,7 +31,7 @@ RMANTREE ?= $(PIXAR_ROOT)/RenderManProServer-$(RMAN_VERSION)
 # SUBDIRS and EXCLUDE control variables determine which .osl files are made.
 #
 # These directories will be searched for .osl files.
-SUBDIRS := convert data displace dot LaD osl pattern space texture trace util
+SUBDIRS := convert data displace dot osl pattern space texture trace util
 
 # These shaders won't be built: directory/basename
 EXCLUDE := 
@@ -91,12 +91,6 @@ INCLUDE = -I. -I./include
 #
 
 # Individual dependencies.
-LaD/FromParts.oso : include/LaD.h
-LaD/ToParts.oso : include/LaD.h
-LaD/Layer.oso : include/LaD.h
-LaD/Mix.oso : include/LaD.h
-LaD/Select.oso : include/LaD.h
-
 util/Add.osl : util/UI.h
 util/Mix.osl : util/UI.h
 util/Mul.osl : util/UI.h
