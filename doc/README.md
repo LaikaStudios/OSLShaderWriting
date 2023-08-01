@@ -1,5 +1,7 @@
 # Documentation
 
+![RepresentativeImage](../media/RepresentativeImage830x415.png)
+
 The documenation for this repository is the [Siggraph 2023](https://s2023.siggraph.org/presentation/?id=gensubcur_104&sess=sess329) course itself: [Shader Writing in Open Shading Language](https://dl.acm.org/doi/10.1145/3587423.3597945).
 
 However, here is some additional information about this repositry's content and how to make use of it.
