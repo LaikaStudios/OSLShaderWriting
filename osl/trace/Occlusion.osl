@@ -1,0 +1,211 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader pattern_Occlusion
+[[
+    int rfm_nodeid = 1234268,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string helpAlert = "warning",
+        string help =
+            "<b>Occlusion</b> is computed by tracing rays into the hemisphere above the surface. "
+            "Its value is defined as the number of rays that hit another surface divided by the "
+            "total number of rays. "
+            "<p>"
+            "<font color='orange'>Note</font>: in RenderMan, this node's results <i>cannot</i> "
+            "be used in the computation of presence, opacity, or displacement. "
+            "</p>"
+    ]],
+
+    vector TraceDirection = vector(0.0)
+    [[
+        string label = "Trace Direction (N)",
+        string help =
+            "If left unconnected and is not (0,0,0), the <i>N</i> "
+            "surface normal direction will be used. "
+    ]],
+
+    float TraceBias = 0.0
+    [[
+        string label = "Trace Bias (auto)",
+        int slider = 1, float slidermin = 0.0, float slidermax = 0.1,
+        string help =
+            "Leave this at <i>0</i> to use the automatically computed trace bias. "
+            "Otherwise, this value will be used. "
+    ]],
+
+    string TraceSet = ""
+    [[
+        int connectable = 0,
+        string label = "Trace Set",
+        string help =
+            "A list of object membership names to use when tracing rays. "
+            "Multiple names are separated by commas. "
+            "If a name is preceded by a <b>&ndash;</b> character, it means to exclude that set."
+            "<p>"
+            "All geometry is included if this is blank. "
+            "</p>"
+            "The <b>*</b> character refers to the object's <tt>identifier:name</tt> value. "
+            "In this way, objects can have their trace <tt>group:membership</tt> set to "
+            "their <tt>identifier:name</tt> value, and objects will only be traced against "
+            "themselves. Using <b>&ndash;*</b> has the effect of excluding the object. "
+    ]],
+
+    int Samples = 16
+    [[
+        int connectable = 0,
+        int slider = 1, int slidermin = 4, int slidermax = 64, int sensitivity = 1,
+        string help =
+            "The number of traced rays to use for computing the results. "
+            "Larger values produce less noise. "
+            "Note: accurate <b>BentNormal</b> output will generally require a larger "
+            "number of <b>Samples</b> than <b>Occlusion</b>. "
+    ]],
+
+    float MaxDist = 1.0
+    [[
+        string label = "Max Dist",
+        int slider = 1, float slidermin = 0.0, float slidermax = 5.0,
+        string help =
+            "This is the maximum distance a sample ray "
+            "can travel before being considered a miss. "
+            "Determines the radius of influence: the maximum "
+            "feature size that can affect the result. "
+    ]],
+
+    float Contrast = 0.5
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "Adjusts the <b>Contrast</b> of the <b>Dirt</b> and <b>Wear</b> results. "
+            "Implemented as a threshold on the percentage of sample hits required "
+            "to produce full occlusion. "
+    ]],
+
+    output float  Occlusion = 0.0,
+    output float  Dirt = 0.0,
+    output float  Wear = 0.0,
+    output vector BentNormal = vector(0.0)
+)
+{
+    // Trace direction.
+    vector  Dn = N;
+
+    if( isconnected(TraceDirection) || vector(0) != TraceDirection )
+    {
+        Dn = normalize( TraceDirection );
+    }
+
+    // Duff, T. et. al. 2017
+    // Building an Orthonormal Basis, Revisited
+    // Journal of Computer Graphics Techniques Vol. 6, No. 1
+    // http://jcgt.org/published/0006/01/01/
+    vector Tn, Bn;
+    {
+        float signz = select( -1, 1, Dn.z >= 0.0 );
+        float a = -1.0 / ( signz + Dn.z );
+        Bn = vector( a*Dn.x*Dn.y, signz + a*Dn.y*Dn.y, -Dn.y );
+        Tn = vector( 1.0 + a*signz*Dn.x*Dn.x, signz*Bn.x, -signz*Dn.x );
+    }
+
+    // Trace bias.
+    float  bias = 0.0001;
+
+    if( isconnected(TraceBias) || 0.0 != TraceBias )
+    {
+        bias = TraceBias;
+    }
+    else
+    {
+        int autobias = 0;
+        getattribute( "trace:autobias", autobias );
+
+        if( autobias ) getattribute( "builtin", "biasR", bias );
+        else getattribute( "trace:bias", bias );
+    }
+
+    // Trace set.
+    string  traceset = TraceSet;
+
+    if( "*" == TraceSet )
+    {
+        getattribute( "identifier:name", traceset );
+    }
+    else if( "-*" == TraceSet )
+    {
+        getattribute( "identifier:name", traceset );
+        traceset = concat( "-", traceset );
+    }
+
+    // Trace samples and accumulate the results.
+    float  hits = 0;
+    float  hitdists = 0;
+    vector missdirs = vector(0);
+
+    // Initialize for stratified sample generation.
+    int  xyDim = int( round( sqrt( Samples )));
+    int  samples = xyDim * xyDim;
+    float  stratum = hashnoise( P );
+
+    for( int i=0; i < samples; i++ )
+    {
+        // Stratified random value (pair).
+        point xi;
+        {
+            int  cx = i % xyDim;
+            int  cy = i / xyDim;
+            vector offset = hashnoise( point( cx, cy, stratum ));
+            xi = (point( cx, cy, 0 ) + offset) / xyDim; // ξ : [0,1)
+        }
+
+        // Generate a uniform sample direction
+        // in the positive Dn hemisphere only.
+        vector dir;
+        {
+            float  phi = xi.x * M_2PI; // 0 ≤ φ < 2π
+            float  sinphi, cosphi;
+            sincos( phi, sinphi, cosphi );
+
+            float  z = xi.y;
+            float  sintheta = sqrt( 1.0 - z*z ); // 0 ≤ θ < π
+
+            float  x = sintheta * cosphi;
+            float  y = sintheta * sinphi;
+
+            dir = x*Tn + y*Bn + z*Dn;
+        }
+
+        // Trace the sample ray.
+        int  hit = trace( P, dir,
+                        "mindist", bias,
+                        "maxdist", MaxDist,
+                        "traceset", traceset
+                        );
+
+        // Accumulate the results.
+        hits += hit;
+        missdirs += (1-hit) * dir;
+
+        float  hitdist;
+        getmessage( "trace", "hitdist", hitdist );
+        hitdists += hitdist;
+    }
+    // End Samples loop.
+
+    // Set the outputs.
+    Occlusion = hits / Samples;
+
+    Dirt = linearstep( 0.0, 1.0001-Contrast, Occlusion );
+    Wear = 1.0 - Dirt;
+
+    BentNormal = normalize( missdirs );
+}

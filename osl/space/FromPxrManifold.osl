@@ -1,0 +1,49 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+
+// The Pixar Manifold struct.
+struct Manifold
+{
+    point  Q;
+    normal QN;
+    float  Qradius;
+};
+
+shader space_FromPxrManifold
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Convert a Pixar Manifold struct into its component parts, "
+            "which consist of: "
+            "<p>"
+            "<b>Q</b>: the space's point. "
+            "<br/><b>QN</b>: a normal representing some type of orientation. "
+            "<br/><b>Qradius</b>: a float representing the diameter of a pixel in <b>Q</b>. "
+            "<p/>"
+            "Note: the <b>Q</b> output point represents the space defined by the "
+            "connected <b>PxrManifold</b> and is typically all that you'll need. "
+            "The other values are for specialty purposes only. "
+    ]],
+
+    Manifold PxrManifold = {0.0}
+    [[
+        string readOnly = "True"
+    ]],
+
+    output point  Q = point( 0.0 ),
+    output normal QN = normal( 0.0 ),
+    output float  Qradius = float( 0.0 )
+)
+{
+    Q = PxrManifold.Q;
+    QN = PxrManifold.QN;
+    Qradius = PxrManifold.Qradius;
+}

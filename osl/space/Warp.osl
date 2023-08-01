@@ -1,0 +1,70 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader space_Warp
+[[
+    int rfm_nodeid = 1234274,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Warps the connected <b>In</b> point. "
+    ]],
+
+    point In = point(0)
+    [[
+        string readOnly = "True",
+        string help =
+            "The point to warp. "
+    ]],
+
+    float InSize = 1.0
+    [[
+        string label = "In Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected <b>In</b> point. "
+            "This is simply passed through to <b>OutSize</b>. "
+    ]],
+
+    vector Vector = vector(0)
+    [[
+        string help =
+            "The warping <b>Vector</b>. This is added to the <b>In</b> point. "
+    ]],
+
+    int ExpandRange = 0
+    [[
+        int connectable = 0,
+        string label = "Expand Range",
+        string widget = "checkBox",
+        string help =
+            "If the <b>Vector</b> values are in the (0,1) range, "
+            "should they be <b>Expanded</b> to (-1,1) so they produce "
+            "symmetrical warping around the <b>In</b> point? "
+    ]],
+
+    float Magnitude = 0.5
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The <b>Magnitude</b> of the warping applied to the <b>In</b> point. "
+    ]],
+
+    output point Out = point(0),
+    output float OutSize = 1.0
+)
+{
+    vector  dir = select( Vector, 2*Vector-vector(1), ExpandRange );
+
+    Out = In + dir*Magnitude;
+    OutSize = InSize;
+}

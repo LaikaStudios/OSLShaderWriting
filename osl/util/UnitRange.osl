@@ -1,0 +1,112 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader util_UnitRange
+[[
+    int rfm_nodeid = 1234293,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Linearly maps the input values to range between 0 and 1 "
+            "at the output. "
+            "Particularly useful to expand or contract pattern values "
+            "used for displacement so they occupy the 0 to 1 input "
+            "range assumed by the <b>displace</b> nodes. "
+            "<p>"
+            "The unclamped outputs are not constrained to range between 0 and 1. "
+            "Turning <i>On</i> the <b>Sawtooth</b> control will let you see the "
+            "values outside the 0 to 1 in the unclamped outputs more easily, "
+            "which will help you set the <b>To 0</b> and <b>To 1</b> values. "
+            "</p>"
+    ]],
+
+    float in = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The value whose range will be re-mapped to 0 to 1. "
+    ]],
+
+    color In = color(0.0)
+    [[
+        string help =
+            "The value whose range will be re-mapped to 0 to 1. "
+    ]],
+
+    float To0 = 0.0
+    [[
+        string label = "To 0",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "This input value will become 0 in the output. "
+    ]],
+
+    float To1 = 1.0
+    [[
+        string label = "To 1",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "This input value will become 1 in the output. "
+    ]],
+
+    float Smoothness = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "<b>Smoothness</b> controls the transition at the 0 and 1 "
+            "ends of the output range: whether it is a hard transition (0) "
+            "or a smoothly rounded one (1). "
+    ]],
+
+    int Sawtooth = 0
+    [[
+        int connectable = 0,
+        string widget = "checkBox",
+        string help =
+            "When this is <i>On</i>, the <b>unclamped</b> outputs will show "
+            "values outside the 0 to 1 range more clearly. "
+    ]],
+
+    output float out = 0.0,
+    output color Out = color(0.0),
+    output float unclamped = 0.0,
+    output color Unclamped = color(0.0)
+)
+{
+    float  eps = ( To1 - To0 ) * 0.25 * Smoothness;
+
+    out = mix(
+            clamp( (in-To0)/(To1-To0), 0.0, 1.0 ),
+            smooth_linearstep( To0+eps, To1-eps, in, eps ),
+            Smoothness
+            );
+
+    Out = mix(
+            color(
+                clamp( (In[0]-To0)/(To1-To0), 0.0, 1.0 ),
+                clamp( (In[1]-To0)/(To1-To0), 0.0, 1.0 ),
+                clamp( (In[2]-To0)/(To1-To0), 0.0, 1.0 )
+                ),
+            color(
+                smooth_linearstep( To0+eps, To1-eps, In[0], eps ),
+                smooth_linearstep( To0+eps, To1-eps, In[1], eps ),
+                smooth_linearstep( To0+eps, To1-eps, In[2], eps )
+                ),
+            Smoothness
+            );
+
+    unclamped = (in-To0)/(To1-To0);
+    Unclamped = (In-color(To0))/(color(To1)-color(To0));
+
+    unclamped = select( unclamped, mod(unclamped,1.0), Sawtooth );
+    Unclamped = select( Unclamped, mod(Unclamped,1.0), Sawtooth );
+}

@@ -1,0 +1,58 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader convert_FToC
+[[
+    int rfm_nodeid = 1234242,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Convert the <b>R G B</b> float values to a <b>Color</b>. "
+            "Or use the <b>Gain</b> input to convert a single floating "
+            "point value into a gray <b>Color</b>. "
+    ]],
+
+    float Gain = 1.0
+    [[
+        int slider = 1, float slidermin = 0.1, float slidermax = 10.0, float slidercenter = 1.0,
+        string help =
+            "<b>Gain</b> scales the <b>R G B</b> values. "
+            "This can be used to convert a single floating "
+            "point value into a gray <b>Color</b>. "
+    ]],
+
+    float R = 1.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The red value of the output <b>Color</b>. "
+    ]],
+
+    float G = 1.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The green value of the output <b>Color</b>. "
+    ]],
+
+    float B = 1.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The blue value of the output <b>Color</b>. "
+    ]],
+
+    output color  Color = color( 0.0 )
+)
+{
+    Color = Gain * color( R, G, B );
+}

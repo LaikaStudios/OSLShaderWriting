@@ -1,0 +1,327 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader pattern_FractalWorley
+[[
+    int rfm_nodeid = 1234291,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Produces various Worley/Voronoi patterns. "
+            "These are all based on the distances between jittered cellular points. "
+    ]],
+
+    point Space = point(0.0)
+    [[
+        string readOnly = "True",
+        string help =
+            "When connected, defines the <b>Space</b> "
+            "in which the pattern is generated. "
+            "<p>"
+            "Otherwise, will use the <tt>__Pref</tt> primvar "
+            "values if they exist, or object space if they do not. "
+            "</p>"
+    ]],
+
+    float SpaceSize = 1.0
+    [[
+        string label = "Space Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected <b>Space</b>. "
+            "Along with the pattern's <b>Size</b> parameter, this determines "
+            "the size of the resulting pattern variations this node produces. "
+    ]],
+
+    int WorleyDim = 3
+    [[
+        int connectable = 0,
+        string label = "Worley Dim",
+        string widget = "mapper",
+        string options = "2D:2|3D:3",
+        string help =
+            "Explicitly controls the <b>Dimension</b> of the <b>Worley</b> pattern. "
+    ]],
+
+    float Size = 1.0
+    [[
+        int slider = 1, float slidermin = 0.1, float slidercenter = 1.0, float slidermax = 10.0,
+        string help =
+            "Controls the <b>Size</b> of the pattern variation. "
+    ]],
+
+    float Jitter = 1.0
+    [[
+        string label = "Jitter",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "Determines how much to randomize the points. "
+    ]],
+
+    float Variation = 0.0
+    [[
+        string label = "Variation",
+        int slider = 1, float slidermin = 0.0, float slidermax = 10.0, float sensitivity = 1.0,
+        string help =
+            "Varies the resulting pattern. Useful for animating the effect. "
+    ]],
+
+    int FractalType = 1
+    [[
+        int connectable = 0,
+        string label = "Fractal Type",
+        string widget = "mapper",
+        string options = "fBm:0|Fractal:1",
+        string help =
+            "Selects whether fractional Brownian motion (<i>fBm</i>) "
+            "or a standard <i>Fractal</i> is produced. "
+    ]],
+
+    float Gain = 0.5
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string conditionalVisPath = "../FractalType",
+        string conditionalVisOp = "equalTo",
+        string conditionalVisValue = "0",
+        string help =
+            "The scaling factor used in <i>fBm</i> to control the contribution of each successive "
+            "iteration. Bigger values are \"rougher\", smaller values are \"smoother\". "
+            "The amplitude of each iteration is <b>Gain</b><tt>^(i-1)</tt>; where <tt>i</tt> is the "
+            "iteration number. "
+            "The process starts with the largest basis function pattern with amplitude = 1. "
+            "<p>"
+            "Note that a <b>Gain</b> of 0 or 1 produces no change in contribution for "
+            "successive iterations, and therefore <b>Erosion</b> effects can't be produced "
+            "for the extreme ends of the <b>Gain</b> range. "
+            "</p>"
+    ]],
+
+    float Dimension = 1.0
+    [[
+        string label = "Dimension",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.5,
+        string conditionalVisPath = "../FractalType",
+        string conditionalVisOp = "equalTo",
+        string conditionalVisValue = "1",
+        string help =
+            "The result is a combination of <b>Iterations</b> number of basis function patterns. "
+            "<p>"
+            "The amplitude of each successive iteration in the <i>Fractal</i> generation "
+            "process is determined by the frequency (<tt>f</tt>) of the basis function pattern "
+            "and the <b>Dimension</b> value: <br/>"
+            "amplitude = <tt>1/(f^ß)</tt>, where <tt>ß = 3-2*</tt><b>Dimension</b>. "
+            "</p>"
+            "The process starts with the largest basis function pattern with amplitude = <tt>1</tt>. "
+    ]],
+
+    float Lacunarity = 2.0
+    [[
+        int connectable = 0,
+        int slider = 1, float slidermin = 1.0, float slidermax = 5.0,
+        string help =
+            "The result is a combination of <b>Iterations</b> number of basis function patterns. "
+            "<p>"
+            "The frequency of each successive basis function pattern in the generation "
+            "process is scaled up from the previous frequency by the <b>Lacunarity</b> value: "
+            "<tt>f(i+1) = f(i)*</tt><b>Lacunarity</b>, where <tt>f</tt> is frequency "
+            "and <tt>i</tt> is iteration number. "
+            "</p>"
+            "The process starts with the largest basis function pattern at <tt>f</tt> = <b>Frequency</b>. "
+    ]],
+
+    int Iterations = 5
+    [[
+        int connectable = 0,
+        int slider = 1, float slidermin = 1, float slidermax = 10, float sensitivity = 1,
+        string help =
+            "The result is a combination of <b>Iterations</b> number of basis function patterns. "
+            "<p>"
+            "Each successive basis function pattern in the generation process is "
+            "<b>Lacunarity</b> times the frequency of the basis function "
+            "pattern generated before it. "
+            "</p>"
+            "The process starts with the largest basis function pattern at "
+            "<tt>f</tt> = <b>Frequency</b> and amplitude = <tt>1</tt>. "
+    ]],
+
+    float Erosion = 0.0
+    [[
+        int slider = 1, float slidermin = -2.0, float slidermax = 2.0,
+        string help =
+            "<b>Erosion</b> determines the so-called \"crossover scale\" of the result. "
+            "<p>"
+            "<i>Negative</i> values will smooth out the <i>low valued</i> areas.<br/> "
+            "<i>Positive</i> values will smooth the <i>high valued</i> ones.<br/> "
+            "<i>0</i> gives a uniform appearance. "
+            "</p>"
+            "Implementation detail: the frequency exponent specified by the <b>Dimension</b> "
+            "or <b>Gain</b> is itself offset as a function of the pattern's magnitude. "
+            "<b>Erosion</b> adjusts that offset. "
+    ]],
+
+    float Shape = 1.0
+    [[
+        int slider = 1, float slidermin = 0.25, float slidermax = 4.0, float slidercenter = 1.0,
+        string help =
+            "Controls the <b>Shape</b> of the distance-measure <b>F</b> results. "
+            "The distance value is raised to this power, thus altering the "
+            "shape of the distance curve. "
+            "Values > 1 produce a more rounded shape, while values < 1 "
+            "produce a more pointed shape. "
+    ]],
+
+    int Invert = 0
+    [[
+        string widget = "checkBox",
+        string help =
+            "Invert the <b>F</b> output values: 1 &ndash; result. "
+            "This changes their shape from convex to concave. "
+    ]],
+
+    output float F1 = 0.0,
+    output float F2 = 0.0,
+    output float F2minusF1 = 0.0,
+    output color Voronoi = color(0.0),
+    output point CellPoint = point(0.0),
+    output float OutSize = 1.0
+)
+{
+    // Pattern generation space.
+    point  Q = Space;
+
+    if( !isconnected( Space ))
+    {
+        Q = P; // Referencing P is required for any down-stream auto-differentiation.
+        getattribute( "builtin", "Po", Q ); // Use un-displaced P.
+        getattribute( "primvar", "__Pref", Q ); // Use Pref if present.
+        Q = transform( "common", "object", Q ); // Correct in all cases.
+    }
+
+    // Size scaling.
+    float  size = max( 1.0e-6, Size );
+    Q /= size;
+    OutSize = SpaceSize * size;
+
+    // Pattern dimension control.
+    int  zLimit = (3 == WorleyDim) ? 1 : -1;
+
+    // Initialize the fractal iteration variables.
+    float  freqi = 1.0;
+    float  f1 = 0.0;
+    float  f2 = 0.0;
+    float  f1mag = 1.0;
+    float  f1sum = 0.0;
+    float  f2mag = 1.0;
+    float  f2sum = 0.0;
+
+    // Compute the fractal.
+    for( int i=0; i < Iterations; i++ )
+    {
+        // This iteration's frequency.
+        point  Qi = Q*freqi;
+
+        // Divide Q into cells (unit cubes) and randomly place
+        // a point within each. Then measure the distance between
+        // the shaded point and the random point in each of the
+        // 27 cells that either contain it or are neighbors of it.
+        point  QIndex = floor( Qi );
+
+        // Variation offset.
+        float  variation = Variation + i*Lacunarity;
+
+        f1 = f2 = 20.0; // Ensure these will be changed.
+
+        for( int x = -1; x <= 1; x++ )
+        {
+            for( int y = -1; y <= 1; y++ )
+            {
+                for( int z = -1; z <= zLimit; z++ )
+                {
+                    // The cell's index and its random offset.
+                    point  cellIndex = QIndex + vector(x,y,z);
+                    vector cellOffset = noise( "cell", cellIndex, Variation );
+
+                    // The cell’s jittered point.
+                    point cellQ = cellIndex + Jitter*cellOffset;
+
+                    // Remove z component if 2D.
+                    if( 2 == WorleyDim ) cellQ.z = Qi.z;
+
+                    // Euclidean distance measure to Qi.
+                    float distance = length( vector( cellQ-Qi ));
+
+                    // Apply Shape exponent.
+                    distance = pow( distance, Shape );
+
+                    // New F1 or F2?
+                    // if distance < F1:
+                    int newF1 = int( step( distance, f1 ));
+                    // if F1 < distance < F2:
+                    int newF2 = int( select( step( distance, f2 ), 0, newF1 ));
+
+                    // New F1: update both.
+                    f2 = select( f2, f1, newF1 );
+                    f1 = select( f1, distance, newF1 );
+
+                    // New F2: update F2.
+                    f2 = select( f2, distance, newF2 );
+
+                    // Update Voronoi color.
+                    Voronoi = select( Voronoi, color(cellOffset), newF1 );
+
+                    // Update CellPoint location.
+                    CellPoint = select( CellPoint, cellQ, newF1 );
+                }
+            }
+        } // End Worley loops.
+
+        // Accumulate this iteration's pattern.
+        F1 += f1mag * f1;
+        F2 += f2mag * f2;
+
+        // Update for the next iteration.
+        freqi *= Lacunarity;
+        f1sum += f1mag;
+        f2sum += f2mag;
+
+        // Erosion adjustment.
+        float  f1erosion = mix( -Erosion, Erosion, F1/f1sum );
+        float  f2erosion = mix( -Erosion, Erosion, F2/f2sum );
+
+        // Fractal magnitude of the next iteration.
+        if( FractalType == 0 )
+        {
+            f1mag = pow( Gain, i+1.0 + 15.0*Gain*f1erosion );
+            f2mag = pow( Gain, i+1.0 + 15.0*Gain*f2erosion );
+        }
+        else
+        {
+            f1mag = 1.0 / pow( freqi, (3.0-2.0*Dimension) + 2.0*f1erosion );
+            f2mag = 1.0 / pow( freqi, (3.0-2.0*Dimension) + 2.0*f2erosion );
+        }
+    } // End fractal loop.
+
+    // Normalize the result.
+    F1 /= f1sum;
+    F2 /= f2sum;
+
+    // Additional float output.
+    F2minusF1 = F2 - F1;
+
+    // Apply inversion.
+    if( 1 == Invert )
+    {
+        F1 = 1.0 - F1;
+        F2 = 1.0 - F2;
+        F2minusF1 = 1.0 - F2minusF1;
+    }
+}

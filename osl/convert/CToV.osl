@@ -1,0 +1,41 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader convert_CToV
+[[
+    int rfm_nodeid = 1234241,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Convert a (0,1) ranged <b>Color</b> to a <b>Vector</b>. "
+            "The vector's components will range from -1 to 1. "
+    ]],
+
+    color Color = color(0.0)
+    [[
+        string help =
+            "The <b>Color</b> value to convert. "
+    ]],
+
+    float Gain = 1.0
+    [[
+        int slider = 1, float slidermin = 0.1, float slidermax = 10.0, float slidercenter = 1.0,
+        string help =
+            "<b>Gain</b> scales the result. "
+    ]],
+
+    output vector Vector = vector(0.0)
+)
+{
+    Vector = 2.0*Color - vector(1.0);
+    Vector *= Gain;
+}

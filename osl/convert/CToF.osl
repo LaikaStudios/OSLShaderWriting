@@ -1,0 +1,46 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader convert_CToF
+[[
+    int rfm_nodeid = 1234239,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Convert a <b>Color</b> to its component float values, "
+            "along with the average of the <b>R G B</b> component values. "
+    ]],
+
+    float Gain = 1.0
+    [[
+        int slider = 1, float slidermin = 0.1, float slidermax = 10.0, float slidercenter = 1.0,
+        string help =
+            "<b>Gain</b> scales the results. "
+    ]],
+
+    color Color = color(1.0)
+    [[
+        string help =
+            "The <b>Color</b> value to convert. "
+    ]],
+
+    output float  R = 0.0,
+    output float  G = 0.0,
+    output float  B = 0.0,
+    output float  AvgRGB = 0.0
+)
+{
+    R = Gain * Color.r;
+    G = Gain * Color.g;
+    B = Gain * Color.b;
+    AvgRGB = ( R + G + B ) / 3.0;
+}

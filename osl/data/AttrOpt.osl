@@ -1,0 +1,174 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader data_AttrOpt
+[[
+    int rfm_nodeid = 1234246,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Returns the specified "
+            "<a href='https://rmanwiki.pixar.com/display/RFK25/User+Attributes'>User Attribute</a>, "
+            "<a href='https://rmanwiki.pixar.com/display/REN25/Instance+Attributes'>Instance Attribute</a>, "
+            "or <a href='https://rmanwiki.pixar.com/display/REN25/Renderer+Options'>Renderer Option</a>. "
+            "<p>"
+            "Supports <i>int</i>, <i>float</i>(double), "
+            "<i>color</i>, <i>point</i>, <i>normal</i>, <i>vector</i>, "
+            "<i>int/float[2x1]</i>, <i>int/float[3x1]</i>, or <i>int/float[4x1]</i> "
+            "data types. "
+            "</p>"
+    ]],
+
+    string Name = ""
+    [[
+        int connectable = 0,
+        string help =
+            "The <b>Name</b> of the desired "
+            "<a href='https://rmanwiki.pixar.com/display/RFK25/User+Attributes'>User Attribute</a>, "
+            "<a href='https://rmanwiki.pixar.com/display/REN25/Instance+Attributes'>Instance Attribute</a>, "
+            "or <a href='https://rmanwiki.pixar.com/display/REN25/Renderer+Options'>Renderer Option</a>. "
+            "<p>"
+            "For a User Attribute, you can simply provide its name: "
+            "</p>"
+            "<i>myFloat</i> will access the <tt>user:myFloat</tt> attribute. "
+            "<p>"
+            "For Instance Attributes or Renderer Options, you must use the "
+            "fully qualified name of the form: <b>category:name</b>: "
+            "</p>"
+            "<i>identifier:id</i> "
+            "<br/><i>Ri:Sides</i> "
+            "<br/><i>Ri:CropWindow</i> "
+    ]],
+
+    int Type = 0
+    [[
+        int connectable = 0,
+        string widget = "mapper",
+        string options =
+            "int:0"
+            "|float:1"
+            "|color:2"
+            "|point:3"
+            "|normal:4"
+            "|vector:5"
+            "|int/float[2x1]:6"
+            "|int/float[3x1]:7"
+            "|int/float[4x1]:8",
+        string helpAlert = "warning",
+        string help =
+            "Selects the attribute or option variable's <b>Type</b>. "
+            "<p>"
+            "Note: selecting the wrong <b>Type</b> <u>will produce incorrect results</u>. "
+            "Pay particular attention to "
+            "<i>color</i>, <i>point</i>, <i>normal</i>, and <i>vector</i> types. "
+            "</p>"
+    ]],
+
+    color DefaultColor = color(0.0)
+    [[
+        string label = "Default Color",
+        string help =
+            "Sets the <b>Default</b> for all tuple data types: "
+            "<i>color</i>, <i>point</i>, <i>normal</i>, <i>vector</i>, "
+            "<i>int/float[2x1]</i>, <i>int/float[3x1]</i>, and <i>int/float[4x1]</i>. "
+    ]],
+
+    float DefaultFloat = 0.0
+    [[
+        string label = "Default Float",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "Sets the <b>Default</b> for <i>int</i> and <i>float</i> data types, "
+            "and the last component of an <i>int/float[4x1]</i> array. "
+    ]],
+
+    output color  Color = color( 0.0 ),
+    output float  R = 0.0,
+    output float  G = 0.0,
+    output float  B = 0.0,
+    output float  Float = 0.0,
+    output int    Int = 0
+)
+{
+    Color = DefaultColor;
+    Float = DefaultFloat;
+    Int = int( DefaultFloat );
+
+    if( 0 == Type )
+    {
+        if( getattribute( Name, Int ))
+        {
+            Float = float( Int );
+        }
+    }
+    else if( 1 == Type )
+    {
+        getattribute( Name, Float );
+    }
+    else if( 2 == Type )
+    {
+        getattribute( Name, Color );
+    }
+    else if( 3 == Type )
+    {
+        point  Q;
+        if( getattribute( Name, Q ))
+        {
+            Color = color( Q );
+        }
+    }
+    else if( 4 == Type )
+    {
+        normal R;
+        if( getattribute( Name, R ))
+        {
+            Color = color( R );
+        }
+    }
+    else if( 5 == Type )
+    {
+        vector S;
+        if( getattribute( Name, S ))
+        {
+            Color = color( S );
+        }
+    }
+    else if( 6 == Type )
+    {
+        float x[2];
+        if( getattribute( Name, x ))
+        {
+            Color = color( x[0], x[1], 0.0 );
+        }
+    }
+    else if( 7 == Type )
+    {
+        float x[3];
+        if( getattribute( Name, x ))
+        {
+            Color = color( x[0], x[1], x[2] );
+        }
+    }
+    else if( 8 == Type )
+    {
+        float x[4];
+        if( getattribute( Name, x ))
+        {
+            Color = color( x[0], x[1], x[2] );
+            Float = x[3];
+        }
+    }
+
+    R = Color.r;
+    G = Color.g;
+    B = Color.b;
+}

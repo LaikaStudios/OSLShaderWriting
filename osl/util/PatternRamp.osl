@@ -1,0 +1,84 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader util_PatternRamp
+[[
+    int rfm_nodeid = 1234296,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Creates a varied transition suitable for mixing or blending. "
+            "Modifies the smooth <b>X</b> value by breaking it up with the "
+            "<b>Pattern</b>. "
+    ]],
+
+    float in = 0.0
+    [[
+        string help =
+            "This is the 0-1 ranged, smoothly varying "
+            "ramp that will be broken up by the <b>Pattern</b>. "
+    ]],
+
+    color In = color(0.0)
+    [[
+        string help =
+            "This is the 0-1 ranged, smoothly varying "
+            "ramp that will be broken up by the <b>Pattern</b>. "
+    ]],
+
+    float Min = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help = 
+            "<b>Min</b> and <b>Max</b> determine the range of "
+            "input values over which the <b>Pattern</b> "
+            "will be applied. "
+    ]],
+
+    float Max = 1.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help = 
+            "<b>Min</b> and <b>Max</b> determine the range of "
+            "input values over which the <b>Pattern</b> "
+            "will be applied. "
+    ]],
+
+    float Pattern = 0.5
+    [[
+        string label = "Pattern",
+        string help =
+            "This pattern will be used to break up the smooth "
+            "variations in the input. "
+    ]],
+
+    float Blur = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help = 
+            "Use <b>Blur</b> to soften the transition from "
+            "<b>Min</b> to <b>Max</b>. "
+    ]],
+
+    output float out = 0.0,
+    output color Out = color(0.0)
+)
+{
+    float  pattern = 1.0 - Pattern;
+    float  blur = 0.5*Blur;
+
+    float  ramp = (in-Min)/(Max-Min);
+    out = smoothstep( pattern-blur, pattern+blur, ramp );
+
+    color  Ramp = (In - color(Min)) / (color(Max) - color(Min));
+    Out = smoothstep( color(pattern-blur), color(pattern+blur), Ramp );
+}

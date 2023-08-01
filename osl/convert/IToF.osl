@@ -1,0 +1,32 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader convert_IToF
+[[
+    int rfm_nodeid = 1234244,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Convert an <b>Int</b> to a <b>Float</b> value. "
+    ]],
+
+    int Int = 0
+    [[
+        string help =
+            "The Integer value to convert. "
+    ]],
+
+    output float  Float = 0.0
+)
+{
+    Float = Int;
+}

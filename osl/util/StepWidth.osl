@@ -1,0 +1,62 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader util_StepWidth
+[[
+    int rfm_nodeid = 1234277,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "<b>Step</b> the <b>In</b> pattern at the desired "
+            "value - create a 0-1 transition - with the desired "
+            "<b>Width</b> and transition <b>Type</b>. "
+    ]],
+
+    float In = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The input pattern value to <b>Step</b>. "
+    ]],
+
+    float Step = 0.5
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help = 
+            "The center of the <b>In</b> value's transtion from 0-1. "
+    ]],
+
+    float Width = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help = 
+            "The <b>Width</b> of the <b>In</b> value's transtion. "
+    ]],
+
+    int Type = 0
+    [[
+        string widget = "mapper",
+        string options = "Smooth:0|Linear:1",
+        string help = 
+            "Selects the <b>Type</b> of <b>Width</b> transition curve. "
+    ]],
+
+    output float Out = 0.0 [[ string widget = "null" ]]
+)
+{
+    float  halfWidth = 0.5*Width;
+    Out = select(
+            smoothstep( Step-halfWidth, Step+halfWidth, In ),
+            linearstep( Step-halfWidth, Step+halfWidth, In ),
+            Type
+            );
+}

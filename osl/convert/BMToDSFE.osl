@@ -1,0 +1,80 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader convert_BMToDSFE
+[[
+    int rfm_nodeid = 1234238,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Converts the <b>Base Color</b> and <b>Metallic</b> values "
+            "to equivalent <b>Diffuse</b>, <b>Specular Face</b>, and <b>Specular Edge</b> colors using: "
+            "<br/>"
+            "<br/><b>Diffuse</b> = mix( <b>Base Color</b>, <i>Metallic Albedo</i>, <b>Metallic</b> ) "
+            "<br/><b>Specular Face</b> = mix( <i>Dielectric Face</i>, <b>Base Color</b>, <b>Metallic</b> ) "
+            "<br/><b>Specular Edge</b> = mix( <i>Dielectric Edge</i>, <b>Base Color</b>, <b>Metallic</b> ) "
+    ]],
+
+    color BaseColor = color(0.5)
+    [[
+        string label = "Base Color",
+        string help =
+            "The <b>Base Color</b> of the material. "
+    ]],
+
+    float Metallic = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The <b>Metallic</b> value of the material. "
+    ]],
+
+    color DielectricFace = color(0.04)
+    [[
+        string label = "Dielectric Face",
+        string helpAlert = "warning",
+        string help =
+            "The <b>Face</b> (F0) color of a <b>Dielectric</b> material. "
+            "This is color(<i>0.04</i>) by definition in the typical &quot;PBR&quot; artistic workflow. "
+            "This value comes from the Fresnel reflection at 0 degrees of a material with an IOR of 1.5; "
+            "an average value for most &quot;non-metal&quot; materials. "
+    ]],
+
+    color DielectricEdge = color(1.0)
+    [[
+        string label = "Dielectric Edge",
+        string helpAlert = "error",
+        string help =
+            "The <b>Edge</b> (F90) color of a <b>Dielectric</b> material. "
+            "This is color(<i>1.0</i>) by definition in the typical &quot;PBR&quot; artistic workflow, "
+            "since the Fresnel reflection at 90 degrees is cos(90) = 1.0 "
+    ]],
+
+    color MetallicAlbedo = color(0.0)
+    [[
+        string label = "Metallic Albedo",
+        string helpAlert = "error",
+        string help =
+            "The <b>Albedo</b> color of a <b>Metallic</b> material. "
+            "This is <i>black</i> by definition in the typical &quot;PBR&quot; artistic workflow, "
+            "since metals have no albedo. "
+    ]],
+
+    output color Diffuse = color(0.0),
+    output color SpecularFace = color(0.0),
+    output color SpecularEdge = color(0.0)
+)
+{
+    Diffuse = mix( BaseColor, MetallicAlbedo, Metallic );
+    SpecularFace = mix( DielectricFace, BaseColor, Metallic );
+    SpecularEdge = mix( DielectricEdge, BaseColor, Metallic );
+}

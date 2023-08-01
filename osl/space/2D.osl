@@ -1,0 +1,108 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader space_2D
+[[
+    int rfm_nodeid = 1234270,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Generates 2D values that stick to the desired <b>Coordinates</b>. "
+    ]],
+
+    int Coordinates = 0
+    [[
+        int connectable = 0,
+        string widget = "mapper",
+        string options = "Texture UV's:0|Primitive Variable:1|Geometric uv space:2",
+        string help = 
+            "Selects which 2D parametric <b>Coordinates</b> to use. "
+            "This determines what the output values will <i>stick</i> to. "
+            "<p>"
+            "<i>Texture UV's</i> refer to the <code>st</code> primvar data created "
+            "in modeling and paint applications for applying textures to an object. "
+            "This often has integer UV Index/Atlas values added to it that identify "
+            "which texture filenames to use on different object patches. "
+            "</p>"
+            "<p>"
+            "<i>Primitive Variable</i> is used to access an arbitrary primvar other "
+            "than <code>st</code>. "
+            "</p>"
+            "<p>"
+            "<i>Geometric uv space</i> is the natural parametric space of the geometry itself. "
+            "</p>"
+    ]],
+
+    string PrimitiveVariable = "st"
+    [[
+        int connectable = 0,
+        string label = "Primitive Variable",
+        string conditionalVisPath = "../Coordinates",
+        string conditionalVisOp = "equalTo",
+        string conditionalVisValue = "1",
+        string help = 
+            "The name of the <b>Primitive Variable</b> the results will stick to. "
+            "<p>"
+            "If the given primvar cannot be found, <i>Texture UV's</i> will be used instead. "
+            "And if those cannot be found, the <i>Geometric uv space</i> will be used. "
+            "</p>"
+    ]],
+
+    output point Out = point(0.0),
+    output float OutSize = 1.0,
+
+    // Will read the 'st' primvar, or sets (s,t) = (u,v) if there is none.
+    float  s = 0.0 [[ int lockgeom = 0, int connectable = 0, string widget = "null" ]],
+    float  t = 0.0 [[ int lockgeom = 0, int connectable = 0, string widget = "null" ]]
+)
+{
+    // Get st space: the Texture UV's.
+    Out = point( s, t, 0 );
+
+    // Primitive Variable.
+    if( 1 == Coordinates )
+    {
+        float  primvar[2];
+        if( getattribute( "primvar", PrimitiveVariable, primvar ))
+        {
+            Out.x = primvar[0];
+            Out.y = primvar[1];
+        }
+        else
+        {
+            float  primvar[3];
+            if( getattribute( "primvar", PrimitiveVariable, primvar ))
+            {
+                Out.x = primvar[0];
+                Out.y = primvar[1];
+            }
+            else
+            {
+                point  primvar;
+                if( getattribute( "primvar", PrimitiveVariable, primvar ))
+                {
+                    // Restore original values.
+                    primvar = transform( "common", "object", primvar );
+                    Out.x = primvar[0];
+                    Out.y = primvar[1];
+                }
+            }
+        }
+    }
+
+    // Geometric uv.
+    else if( 2 == Coordinates )
+    {
+        Out.x = u;
+        Out.y = v;
+    }
+}

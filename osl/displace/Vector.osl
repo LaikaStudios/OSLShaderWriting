@@ -1,0 +1,125 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader displace_Vector
+[[
+    int rfm_nodeid = 1234250,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Create LaSh Displacement (LaD) components (Nd, DeltaP, and Bulk) "
+            "from a <b>Vector</b> pattern input. "
+    ]],
+
+    vector Vector = vector(0.0)
+    [[
+        string label = "Vector",
+        string readOnly = "True",
+        string help =
+            "The surface is offset directly by the <b>Vector</b> value: "
+            "P += <b>Vector</b>. "
+            "<p>"
+            "The <b>Vector</b> is assumed to contain values whose lengths "
+            "range between 0 and 1. "
+            "</p>"
+    ]],
+
+    float VectorSize = 1.0
+    [[
+        string label = "Vector Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected <b>Vector</b> pattern variations. "
+    ]],
+
+    float Magnitude = 0.5
+    [[
+        string label = "Magnitude",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "Controls the <b>Magnitude</b> of the displacement. "
+    ]],
+
+    string MagnitudeSpace = "world"
+    [[
+        int connectable = 0,
+        string label = "Magnitude Space",
+        string widget = "popup", int editable = 1,
+        string options =
+            "object"
+            "|world",
+        string help =
+            "Determines in what <b>Space</b> the units of <b>Magnitude</b> are specified: "
+            "how big is 1 unit of <b>Magnitude</b> displacement?"
+    ]],
+
+    int Invert = 0
+    [[
+        int connectable = 0,
+        string label = "Invert",
+        string widget = "checkBox",
+        string help =
+            "<b>Invert</b> the displacement pattern: high becomes low, "
+            "concave becomes convex, and vice versa. "
+    ]],
+
+    float BulkGain = 1.0
+    [[
+        string label = "Bulk Gain",
+        int slider = 1, float slidermin = 0.0, float slidermax = 2.0,
+        string help =
+            "Scales the output <b>Bulk</b> relative "
+            "to the displacement <b>Magnitude</b>. "
+            "Bulk is used when displacements Accumulate. "
+            "Useful when the input <b>Vector</b> length does not occupy the 0 to 1 "
+            "dymanic range of values, or simply to allow more user control "
+            "of how much accumulation bulk this displacement produces. "
+    ]],
+
+    output normal Nd = N,
+    output vector DeltaP = vector(0.0),
+    output float  Bulk = 0.0
+)
+{
+    // Invert?
+    vector  deltaP = Vector;
+    if( Invert ) deltaP = -deltaP;
+
+    // Displacement magnitude.
+    float  magnitude = VectorSize * Magnitude;
+
+    // Scale magnitude to common space.
+    matrix  mag_to_common;
+    if( getmatrix( MagnitudeSpace, "common", mag_to_common ))
+    {
+        magnitude *= pow( abs( determinant( mag_to_common )), (1.0/3.0) );
+    }
+    else
+    {
+        warning(
+            "Magnitude Space = \"%s\" couldn't be found. "
+            "Using \"common\" space instead. ",
+            MagnitudeSpace
+            );
+    }
+
+    // The common-space change in the surface.
+    DeltaP = deltaP * magnitude;
+
+    // Compute the displaced surface normal.
+    point  Po = P;
+    getattribute( "builtin", "Po", Po );
+    Nd = normalize( calculatenormal( Po + DeltaP ));
+
+    // Displacement accumulation Bulk.
+    Bulk = magnitude * BulkGain;
+}

@@ -1,0 +1,205 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader data_BuiltIn
+[[
+    int rfm_nodeid = 1234247,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Access the "
+            "<a href='https://rmanwiki.pixar.com/display/REN25/RixShadingContext#RixShadingContext-getbuiltinvarBuiltinVariables'>"
+            "RenderMan Built-in Variables</a>. "
+    ]],
+
+    string Space = "object"
+    [[
+        int connectable = 0,
+        string widget = "popup", int editable = 1,
+        string options =
+            "common"
+            "|object"
+            "|world"
+            "|camera"
+            "|screen"
+            "|raster"
+            "|NDC",
+        string help =
+            "Selects what <b>Space</b> the <i>point</i>, <i>normal</i>, and <i>vector</i> "
+            "output values are in. You may also type in the name of your own coordinate system. "
+            "<p>"
+            "Note: <i>common</i> space <b>is not consistent</b> between bxdf and displacement shading networks. "
+            "Choose a different <b>Space</b> if you want these values to be the same in bxdf and displacement "
+            "shading networks. "
+            "</p>"
+    ]],
+
+    int Negate = 0
+    [[
+        int connectable = 0,
+        string widget = "checkBox",
+        string help =
+            "Reverse the direction of any <i>vector</i> or <i>normal</i> outputs. "
+    ]],
+
+    output point  out_P = point(0.0),
+    output float  out_PRadius = 0.0,
+    output point  out_Po = point(0.0),
+    output normal out_Nn = normal(0.0),
+    output normal out_Non = normal(0.0),
+    output normal out_Naon = normal(0.0),
+    output normal out_Ngn = normal(0.0),
+    output vector out_Tn = vector(0.0),
+    output vector out_I = vector(0.0),
+    output vector out_In = vector(0.0),
+    output vector out_V = vector(0.0),
+    output vector out_Vn = vector(0.0),
+    output float  out_VLen = 0.0,
+    output float  out_curvature = 0.0,
+    output float  out_curvatureU = 0.0,
+    output float  out_curvatureV = 0.0,
+    output float  out_incidentRaySpread = 0.0,
+    output float  out_incidentRayRadius = 0.0,
+    output float  out_mpSize = 0.0,
+    output float  out_biasR = 0.0,
+    output float  out_biasT = 0.0,
+    output float  out_s = 0.0,
+    output float  out_t = 0.0,
+    output point  out_st = point(0.0),
+    output float  out_ds = 0.0,
+    output float  out_dt = 0.0,
+    output float  out_u = 0.0,
+    output float  out_v = 0.0,
+    output float  out_w = 0.0,
+    output point  out_uvw = point(0.0),
+    output float  out_du = 0.0,
+    output float  out_dv = 0.0,
+    output float  out_dw = 0.0,
+    output vector out_dstdu = vector(0.0),
+    output vector out_dstdv = vector(0.0),
+    output vector out_dstdw = vector(0.0),
+    output vector out_dPdu = vector(0.0),
+    output vector out_dPdv = vector(0.0),
+    output vector out_dPdw = vector(0.0),
+    output vector out_dPdtime = vector(0.0),
+    output vector out_dPcameradtime = vector(0.0),
+    output vector out_motionFore = vector(0.0),
+    output vector out_motionBack = vector(0.0),
+    output float  out_time = 0.0,
+    output float  out_Frame = 0,
+    output int    out_id = 0,
+    output int    out_id2 = 0,
+    output float  out_outsideIOR = 0.0,
+    output float  out_wavelength = 0.0,
+    output string shadingMode = "",
+
+    // Will read the "st" primvar, or sets (s,t) = (u,v) if there is none.
+    float  s = 0.0 [[ int lockgeom = 0, int connectable = 0, string widget = "null" ]],
+    float  t = 0.0 [[ int lockgeom = 0, int connectable = 0, string widget = "null" ]]
+)
+{
+    out_P = P;
+    getattribute( "builtin", "PRadius", out_PRadius );
+    getattribute( "builtin", "Po", out_Po );
+    out_Nn = N;
+    getattribute( "builtin", "Non", out_Non );
+    getattribute( "builtin", "Naon", out_Non );
+    out_Ngn = Ng;
+    getattribute( "builtin", "Tn", out_Tn );
+    out_I = I;
+    out_V = -I;
+    getattribute( "builtin", "curvature", out_curvature );
+    getattribute( "builtin", "curvatureU", out_curvatureU );
+    getattribute( "builtin", "curvatureV", out_curvatureV );
+    getattribute( "builtin", "incidentRaySpread", out_incidentRaySpread );
+    getattribute( "builtin", "incidentRayRadius", out_incidentRayRadius );
+    getattribute( "builtin", "mpSize", out_mpSize );
+    getattribute( "builtin", "biasR", out_biasR );
+    getattribute( "builtin", "biasT", out_biasT );
+    out_s = s;
+    out_t = t;
+    out_st = point( s, t, 0.0 );
+    out_ds = filterwidth( s );
+    out_dt = filterwidth( t );
+    out_dstdu = Dx( out_st );
+    out_dstdv = Dy( out_st );
+    out_dstdw = Dz( out_st );
+    out_u = u;
+    out_v = v;
+    getattribute( "builtin", "w", out_w );
+    out_uvw = point( out_u, out_v, out_w );
+    getattribute( "builtin", "du", out_du );
+    getattribute( "builtin", "dv", out_dv );
+    getattribute( "builtin", "dw", out_dw );
+    out_dPdu = dPdu;
+    out_dPdv = dPdv;
+    getattribute( "builtin", "dPdw", out_dPdw );
+    out_dPdtime = dPdtime;
+    getattribute( "builtin", "dPcameradtime", out_dPcameradtime );
+    getattribute( "builtin", "motionFore", out_motionFore );
+    getattribute( "builtin", "motionBack", out_motionBack );
+    out_time = time;
+    getattribute( "Frame", out_Frame );
+    getattribute( "builtin", "id", out_id ); // bottom 32 bits of id.
+    getattribute( "builtin", "id2", out_id2 ); // top 32 bits of id (only used by katana).
+    getattribute( "builtin", "outsideIOR", out_outsideIOR );
+    getattribute( "builtin", "wavelength", out_wavelength );
+
+    // Access a string value representing the RixSCShadingMode enum.
+    getattribute( "context", "shadingMode", shadingMode );
+
+    if( "common" != Space )
+    {
+        out_P = transform( Space, out_P );
+        out_Po = transform( Space, out_Po );
+        out_Nn = transform( Space, out_Nn );
+        out_Non = transform( Space, out_Non );
+        out_Naon = transform( Space, out_Naon );
+        out_Ngn = transform( Space, out_Ngn );
+        out_Tn = transform( Space, out_Tn );
+        out_I = transform( Space, out_I );
+        out_V = transform( Space, out_V );
+        out_dPdu = transform( Space, out_dPdu );
+        out_dPdv = transform( Space, out_dPdv );
+        out_dPdw = transform( Space, out_dPdw );
+        out_dPdtime = transform( Space, out_dPdtime );
+        out_motionFore = transform( Space, out_motionFore );
+        out_motionBack = transform( Space, out_motionBack );
+
+        out_Nn = normalize( out_Nn );
+        out_Non = normalize( out_Non );
+        out_Naon = normalize( out_Naon );
+        out_Ngn = normalize( out_Ngn );
+        out_Tn = normalize( out_Tn );
+    }
+
+    if( Negate )
+    {
+        out_Nn = -out_Nn;
+        out_Non = -out_Non;
+        out_Naon = -out_Naon;
+        out_Ngn = -out_Ngn;
+        out_Tn = -out_Tn;
+        out_I = -out_I;
+        out_V = -out_V;
+        out_dPdu = -out_dPdu;
+        out_dPdv = -out_dPdv;
+        out_dPdw = -out_dPdw;
+        out_dPdtime = -out_dPdtime;
+        out_motionFore = -out_motionFore;
+        out_motionBack = -out_motionBack;
+    }
+
+    out_In = normalize( out_I );
+    out_Vn = normalize( out_V );
+    out_VLen = length( out_V );
+}

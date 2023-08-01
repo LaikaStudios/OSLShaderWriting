@@ -1,0 +1,157 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader pattern_Worley
+[[
+    int rfm_nodeid = 1234269,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Produces various Worley/Voronoi patterns. "
+            "These are all based on the distances between jittered cellular points. "
+    ]],
+
+    point Space = point(0.0)
+    [[
+        string readOnly = "True",
+        string help =
+            "When connected, defines the <b>Space</b> "
+            "in which the pattern is generated. "
+            "<p>"
+            "Otherwise, will use the <tt>__Pref</tt> primvar "
+            "values if they exist, or object space if they do not. "
+            "</p>"
+    ]],
+
+    float SpaceSize = 1.0
+    [[
+        string label = "Space Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected <b>Space</b>. "
+            "Along with the pattern's <b>Size</b> parameter, this determines "
+            "the size of the resulting pattern variations this node produces. "
+    ]],
+
+    float Size = 1.0
+    [[
+        int slider = 1, float slidermin = 0.1, float slidercenter = 1.0, float slidermax = 10.0,
+        string help =
+            "Controls the <b>Size</b> of the pattern variation. "
+    ]],
+
+    float Jitter = 1.0
+    [[
+        string label = "Jitter",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "Determines how much to randomize the points. "
+    ]],
+
+    int Invert = 0
+    [[
+        string widget = "checkBox",
+        string help =
+            "Invert the float output values: 1 &ndash; result. "
+    ]],
+
+    float Variation = 0.0
+    [[
+        string label = "Variation",
+        int slider = 1, float slidermin = 0.0, float slidermax = 10.0,
+        string help =
+            "Varies the resulting pattern. Useful for animating the effect. "
+    ]],
+
+    output float F1 = 0.0,
+    output float F2 = 0.0,
+    output float F2minusF1 = 0.0,
+    output color Voronoi = color(0.0),
+    output point CellPoint = point(0.0),
+    output float OutSize = 1.0
+)
+{
+    // Pattern generation space.
+    point  Q = Space;
+
+    if( !isconnected( Space ))
+    {
+        Q = P; // Referencing P is required for any down-stream auto-differentiation.
+        getattribute( "builtin", "Po", Q ); // Use un-displaced P.
+        getattribute( "primvar", "__Pref", Q ); // Use Pref if present.
+        Q = transform( "common", "object", Q ); // Correct in all cases.
+    }
+
+    // Size scaling.
+    float  size = max( 1.0e-6, Size );
+    Q /= size;
+    OutSize = SpaceSize * size;
+
+    // Divide Q into cells (unit cubes) and randomly place
+    // a point within each. Then measure the distance between
+    // the shaded point and the random point in each of the
+    // 27 cells that either contain it or are neighbors of it.
+    F1 = F2 = 5.0; // Ensure these will be changed.
+
+    // The shaded point's cell index.
+    point  QIndex = floor( Q );
+
+    for( int i = -1; i <= 1; i++ )
+    {
+        for( int j = -1; j <= 1; j++ )
+        {
+            for( int k = -1; k <= 1; k++ )
+            {
+                // The cell's index and its random offset.
+                point  cellIndex = QIndex + vector(i,j,k);
+                vector cellOffset = noise( "cell", cellIndex, Variation );
+
+                // The cell’s jittered point.
+                point cellQ = cellIndex + Jitter*cellOffset;
+
+                // Euclidean distance measure to Q.
+                float distance = length( vector( cellQ-Q ));
+
+                // New F1 or F2?
+                // if distance < F1:
+                float newF1 = step( distance, F1 );
+                // if F1 < distance < F2:
+                float newF2 = mix( step( distance, F2 ), 0.0, newF1 );
+
+                // New F1: update both.
+                F2 = mix( F2, F1, newF1 );
+                F1 = mix( F1, distance, newF1 );
+
+                // New F2: update F2.
+                F2 = mix( F2, distance, newF2 );
+
+                // Update Voronoi color.
+                Voronoi = mix( Voronoi, color(cellOffset), newF1 );
+
+                // Update CellPoint location.
+                CellPoint = mix( CellPoint, cellQ, newF1 );
+
+            }
+        }
+    } // End loops.
+
+    // Additional float output.
+    F2minusF1 = F2 - F1;
+
+    // Apply inversion.
+    if( Invert )
+    {
+        F1 = 1.0 - F1;
+        F2 = 1.0 - F2;
+        F2minusF1 = 1.0 - F2minusF1;
+    }
+}

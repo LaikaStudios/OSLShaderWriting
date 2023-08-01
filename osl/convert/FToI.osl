@@ -1,0 +1,60 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader convert_FToI
+[[
+    int rfm_nodeid = 1234243,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Convert a <b>Float</b> to an <b>Int</b> value. "
+    ]],
+
+    float Float = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The Float value to convert. "
+    ]],
+
+    int Conversion = 0
+    [[
+        int connectable = 0,
+        string widget = "mapper",
+        string options =
+            "round:0"
+            "|floor:1"
+            "|ceil:2",
+        string help =
+            "Selects the float to integer conversion: "
+            "<br/>"
+            "<br/>Int = round( Float ) "
+            "<br/>Int = floor( Float ) "
+            "<br/>Int = ceil( Float ) "
+    ]],
+
+    output int Int = 0
+)
+{
+    if( 0 == Conversion )
+    {
+        Int = int( round( Float ));
+    }
+    else if( 1 == Conversion )
+    {
+        Int = int( floor( Float ));
+    }
+    else if( 2 == Conversion )
+    {
+        Int = int( ceil( Float ));
+    }
+}

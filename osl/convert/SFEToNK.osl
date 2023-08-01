@@ -1,0 +1,114 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader convert_SFEToNK
+[[
+    int rfm_nodeid = 1234245,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string helpAlert = "warning",
+        string help =
+            "Converts the <i>Artistic</i> specular reflection colors "
+            "<b>Specular Face</b> (F0 color) and <b>Specular Edge</b> (F90 color) "
+            "to an equivalent <i>Refraction Index</i> (<b>n</b>) "
+            "and <i>Extinction Coefficient</i> (<b>k</b>) used by <i>Physcial</i> "
+            "specular reflection models. "
+            "The combination of (<b>n</b> + <i>i</i><b>k</b>) "
+            "is called the complex refractive index. "
+            "<br/><br/>"
+            "<font color='orange'>Note</font>: when using this with "
+            "PxrSurface's <i>Physical</i> <b>Specular Fresnel Mode</b>, "
+            "set the Specular <b>Edge Color</b> to (1,1,1) to match "
+            "the results produced by LamaConductor. "
+    ]],
+
+    color SpecularFace = color(0.0)
+    [[
+        string label = "Specular Face (F0)",
+        string help =
+            "The reflected specular color when looking perpendicular to the surface "
+            "(down the surface normal). "
+            "<br/><br/>"
+            "This is also known as the F0 color. "
+    ]],
+
+    color SpecularEdge = color(1.0)
+    [[
+        string label = "Specular Edge (F90)",
+        string help =
+            "The reflected specular color at the silhouette edge (tangent to the surface). "
+            "<br/><br/>"
+            "This is also known as the F90 color. "
+    ]],
+
+    output color n = color(0.0),
+    output color k = color(0.0)
+)
+{
+    float square( float x ) { return x*x; }
+
+    // Gulbrandsen, O. 2014
+    // Artist Friendly Metallic Fresnel
+    // Journal of Computer Graphics Techniques, Vol. 3, No. 4
+    // http://jcgt.org/published/0003/04/03/
+
+    float f0f90_to_eta( float f0, float f90 )
+    {
+        float  eta = ( 1.0-f0 )/( 1.0+f0 );
+
+        float  sqrt_f0 = sqrt( f0 );
+        float  eta_max = ( 1.0+sqrt_f0 )/( 1.0-sqrt_f0 );
+
+        eta_max = select( 1.0e6, eta_max, isfinite(eta_max) );
+
+        eta = mix( eta_max, eta, f90 );
+
+        return eta;
+    }
+
+    float f0eta_to_k( float f0, float eta )
+    {
+        float  nr = f0*square( eta+1.0 ) - square( eta-1.0 );
+        float  k = sqrt( nr/( 1.0-f0 ));
+
+        return select( 1.0, k, isfinite(k) );
+    }
+
+    // This is the pseudo-spectral portion, so it's fairly bogus.
+    // In particular, the hue caused by simply using the rgb values
+    // results in the hue being inverted in the edge response for
+    // extreme (i.e. non-physical) color differences in f0 and f90.
+    // At any rate, it does work quite well in practice.
+    color f0f90_to_eta( color f0, color f90 )
+    {
+        return color(
+                f0f90_to_eta( f0[0], f90[0] ),
+                f0f90_to_eta( f0[1], f90[1] ),
+                f0f90_to_eta( f0[2], f90[2] )
+                );
+    }
+
+    color f0eta_to_k( color f0, color eta )
+    {
+        return color(
+                f0eta_to_k( f0[0], eta[0] ),
+                f0eta_to_k( f0[1], eta[1] ),
+                f0eta_to_k( f0[2], eta[2] )
+                );
+    }
+
+    color  eta = f0f90_to_eta( SpecularFace, SpecularEdge );
+    k = f0eta_to_k( SpecularFace, eta );
+
+    n = color(1)/eta;
+    n = select( color(1.0e6), n, color( isfinite(n[0]), isfinite(n[1]), isfinite(n[2]) ));
+}

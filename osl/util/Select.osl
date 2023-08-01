@@ -1,0 +1,73 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+#define INPUT_PARAMS(N) \
+    float in##N = 0.0 \
+    [[ \
+        string label = "in " #N, \
+        string readOnly = "True", \
+        string help = \
+            "A float pattern value. " \
+    ]], \
+\
+    color In##N = color(0.0) \
+    [[ \
+        string label = "In " #N, \
+        string readOnly = "True", \
+        string help = \
+            "A tuple pattern value: color, point, vector, normal. " \
+    ]], \
+\
+    float Size##N = 1.0 \
+    [[ \
+        string label = "Size " #N, \
+        string readOnly = "True", \
+        string help = \
+            "The <b>Size</b> of the " #N " pattern. " \
+    ]]
+
+
+shader util_Select
+[[
+    int rfm_nodeid = 1234255,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Selects one of the input patterns. "
+    ]],
+
+    int Selection = 0
+    [[
+        int slider = 1, int slidermin = 0, int slidermax = 5, int slidersensitivity = 1,
+        string help =
+            "Selects which of the input patterns to use. "
+    ]],
+
+    INPUT_PARAMS(5),
+    INPUT_PARAMS(4),
+    INPUT_PARAMS(3),
+    INPUT_PARAMS(2),
+    INPUT_PARAMS(1),
+    INPUT_PARAMS(0),
+
+    output float out = 0.0,
+    output color Out = color(0.0),
+    output float Size = 0.0
+)
+{
+    if( 0 == Selection ){ out = in0; Out = In0; Size = Size0; }
+    else if( 1 == Selection ){ out = in1; Out = In1; Size = Size1; }
+    else if( 2 == Selection ){ out = in2; Out = In2; Size = Size2; }
+    else if( 3 == Selection ){ out = in3; Out = In3; Size = Size3; }
+    else if( 4 == Selection ){ out = in4; Out = In4; Size = Size4; }
+    else if( 5 == Selection ){ out = in5; Out = In5; Size = Size5; }
+}

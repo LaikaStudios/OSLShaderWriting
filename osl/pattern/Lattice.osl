@@ -1,0 +1,193 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader pattern_Lattice
+[[
+    int rfm_nodeid = 1234266,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Produces an alternating pattern in one, two, or three dimensions."
+    ]],
+
+    point Space = point(0.0)
+    [[
+        string readOnly = "True",
+        string help =
+            "When connected, defines the <b>Space</b> "
+            "in which the pattern is generated. "
+            "<p>"
+            "Otherwise, will use the <tt>__Pref</tt> primvar "
+            "values if they exist, or object space if they do not. "
+            "</p>"
+    ]],
+
+    float SpaceSize = 1.0
+    [[
+        string label = "Space Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected <b>Space</b>. "
+            "Along with the pattern's <b>Size</b> parameter, this determines "
+            "the size of the resulting pattern variations this node produces. "
+    ]],
+
+    float Size = 1.0
+    [[
+        int slider = 1, float slidermin = 0.1, float slidercenter = 1.0, float slidermax = 10.0,
+        string help =
+            "Controls the <b>Size</b> of the pattern variation. "
+    ]],
+
+    int Waveform = 0
+    [[
+        int connectable = 0,
+        string widget = "mapper",
+        string options =
+            "Sine:0"
+            "|Cosine:1"
+            "|Sawtooth:2"
+            "|Triangle:3"
+            "|Square:4"
+            "|Smooth:5",
+        string help =
+            "Selects which <b>Waveform</b> is used to produce the variation. "
+    ]],
+
+    float DutyCycle = 0.5
+    [[
+        string conditionalVisPath = "../Waveform",
+        string conditionalVisOp = "greaterThan",
+        string conditionalVisValue = "3",
+
+        string label = "Duty Cycle",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "Adjusts the ratio of black(0) to white(1) in the pattern. "
+    ]],
+
+    int Axes = 6
+    [[
+        int connectable = 0,
+        string widget = "mapper",
+        string options = "X:0|Y:1|Z:2|XY:3|XZ:4|YZ:5|XYZ:6",
+        string help =
+            "Selects which <b>Axes</b> are used to produce the variation. "
+    ]],
+
+    output float  Float = 0.0,
+    output color  Gray = color(0.0),
+    output color  Color = color(0.0),
+    output point  Point = point(0.0),
+    output vector Vector = vector(0.0),
+    output normal Normal = normal(0.0),
+    output float  OutSize = 0.0
+)
+{
+    // Pattern generation space.
+    point  Q = Space;
+
+    if( !isconnected( Space ))
+    {
+        Q = P; // Referencing P is required for any down-stream auto-differentiation.
+        getattribute( "builtin", "Po", Q ); // Use un-displaced P.
+        getattribute( "primvar", "__Pref", Q ); // Use Pref if present.
+        Q = transform( "common", "object", Q ); // Correct in all cases.
+    }
+
+    // Size scaling.
+    float  size = max( 1.0e-6, Size );
+    Q /= size;
+    OutSize = SpaceSize * size;
+
+    // Waveform (spatial conversion) type.
+    if( 0 == Waveform )
+    {
+        Q = linearstep( -1.0, 1.0, sin( Q*M_2PI )); // Sine
+    }
+    else if( 1 == Waveform )
+    {
+        Q = linearstep( -1.0, 1.0, cos( Q*M_2PI )); // Cosine
+    }
+    else if( 2 == Waveform )
+    {
+        Q = Q-floor(Q); // Sawtooth. Q-floor(Q) ≡ mod(Q,1).
+    }
+    else if( 3 == Waveform )
+    {
+        Q = 2 * min( mod(Q,1), mod(-Q,1) ); // Triangle.
+    }
+    else if( 4 == Waveform )
+    {
+        Q = step( 1.0-DutyCycle, Q-floor(Q) ); // Square
+    }
+    else if( 5 == Waveform )
+    {
+        Q = 2 * min( mod(Q,1), mod(-Q,1) ); // Triangle.
+
+        // Smooth it.
+        float  a = linearstep( 0.5, 1.0, 1.0-DutyCycle );
+        float  b = linearstep( 0.0, 0.5, 1.0-DutyCycle );
+        Q = smoothstep( a, b , Q );
+    }
+
+    // Variation axes.
+    if( 0 == Axes )
+    {
+        Float = Q.x;
+        Color.r = Q.x;
+    }
+    else if( 1 == Axes )
+    {
+        Float = Q.y;
+        Color.g = Q.y;
+    }
+    else if( 2 == Axes )
+    {
+        Float = Q.z;
+        Color.b = Q.z;
+    }
+    else if( 3 == Axes )
+    {
+        Float = Q.x;
+        Float = mix( Float, 1.0-Float, Q.y );
+        Color.r = Q.x;
+        Color.g = Q.y;
+    }
+    else if( 4 == Axes )
+    {
+        Float = Q.x;
+        Float = mix( Float, 1.0-Float, Q.z );
+        Color.r = Q.x;
+        Color.b = Q.z;
+    }
+    else if( 5 == Axes )
+    {
+        Float = Q.y;
+        Float = mix( Float, 1.0-Float, Q.z );
+        Color.g = Q.y;
+        Color.b = Q.z;
+    }
+    else
+    {
+        Float = Q.x;
+        Float = mix( Float, 1.0-Float, Q.y );
+        Float = mix( Float, 1.0-Float, Q.z );
+        Color = Q;
+    }
+
+    // Set the other outputs.
+    Gray = color( Float );
+    Point = point( Color );
+    Vector = vector( 2.0*Color - color(1.0) );
+    Normal = normalize( Vector );
+}

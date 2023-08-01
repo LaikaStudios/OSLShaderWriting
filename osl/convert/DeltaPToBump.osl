@@ -1,0 +1,60 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader convert_DeltaPToBump
+[[
+    int rfm_nodeid = 1234252,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Converts a <b>DeltaP</b> displacement into a bumped shading "
+            "<b>Normal</b> and a <b>SurfaceGradient</b> shading normal representation. "
+    ]],
+
+    vector DeltaP = vector(0.0)
+    [[
+        string help =
+            "The <b>DeltaP</b> displacement value to convert into a shading "
+            "<b>Normal</b> and a <b>SurfaceGradient</b> shading normal representation. "
+    ]],
+
+    float BumpGain = 1.0
+    [[
+        string label = "Bump Gain",
+        int slider = 1, float slidermin = 0.0, float slidermax = 2.0,
+        string help =
+            "Controls how much bumped appearance the resulting "
+            "shading <b>Normal</b> or <b>SurfaceGradient</b> will contain. "
+    ]],
+
+    output normal Normal = normal(0.0),
+    output vector SurfaceGradient = vector(0.0)
+)
+{
+    // Must reference P for auto-differentiation to work.
+    point  Po = P;
+    getattribute( "builtin", "Po", Po );
+
+    // Compute the displaced surface normal.
+    point  Pdisp = Po + DeltaP;
+    normal Ndisp = calculatenormal( Pdisp );
+
+    // Mikkelsen, M. 2020
+    // Surface Gradient–Based Bump Mapping Framework
+    // Journal of Computer Graphics Techniques, Vol. 9, No. 3
+    // https://jcgt.org/published/0009/03/04/
+    float  k = dot( N, Ndisp );
+    SurfaceGradient = ( k*N - Ndisp )/max( 1.0e-10, abs(k) ) * BumpGain;
+
+    // Bumped normal from Surface Gradient.
+    Normal = normalize( N - SurfaceGradient );
+}

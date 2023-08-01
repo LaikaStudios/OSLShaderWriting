@@ -1,0 +1,127 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader pattern_Noise
+[[
+    int rfm_nodeid = 1234267,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Produces a <b>Noise</b> pattern of the selected <b>Type</b> "
+            "and <b>Dimension</b>. "
+    ]],
+
+    point Space = point(0.0)
+    [[
+        string readOnly = "True",
+        string help =
+            "When connected, defines the <b>Space</b> "
+            "in which the pattern is generated. "
+            "<p>"
+            "Otherwise, will use the <tt>__Pref</tt> primvar "
+            "values if they exist, or object space if they do not. "
+            "</p>"
+    ]],
+
+    float SpaceSize = 1.0
+    [[
+        string label = "Space Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected <b>Space</b>. "
+            "Along with the pattern's <b>Size</b> parameter, this determines "
+            "the size of the resulting pattern variations this node produces. "
+    ]],
+
+    float Size = 1.0
+    [[
+        int slider = 1, float slidermin = 0.1, float slidercenter = 1.0, float slidermax = 10.0,
+        string help =
+            "Controls the <b>Size</b> of the pattern variations. "
+    ]],
+
+    string NoiseType = "uperlin"
+    [[
+        int connectable = 0,
+        string label = "Noise Type",
+        string widget = "mapper",
+        string options = "Perlin:uperlin|Simplex:usimplex|Cell:cell",
+        string help =
+            "Selects whether <i>Perlin</i>, <i>Simplex</i>, or <i>Cell</i> noise is used. "
+    ]],
+
+    int NoiseDim = 3
+    [[
+        int connectable = 0,
+        string label = "Noise Dim",
+        string widget = "mapper",
+        string options = "2D:2|3D:3|4D:4",
+        string help =
+            "Explicitly controls the <b>Dimension</b> of the <b>Noise</b>. "
+            "This can have a particularly large impact on the <i>Simplex</i> <b>Noise Type</b>. "
+    ]],
+
+    float Variation = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 10.0,
+        string help =
+            "This varies the result without changing any of its fundamental "
+            "characteristics. Can be used to animate the resulting pattern, "
+            "or just produce a different variant of it. "
+    ]],
+
+    output float  Float = 0.0,
+    output color  Gray = color(0.0),
+    output color  Color = color(0.0),
+    output point  Point = point(0.0),
+    output vector Vector = vector(0.0),
+    output normal Normal = normal(0.0),
+    output float  OutSize = 1.0
+)
+{
+    // Pattern generation space.
+    point  Q = Space;
+
+    if( !isconnected( Space ))
+    {
+        Q = P; // Referencing P is required for any down-stream auto-differentiation.
+        getattribute( "builtin", "Po", Q ); // Use un-displaced P.
+        getattribute( "primvar", "__Pref", Q ); // Use Pref if present.
+        Q = transform( "common", "object", Q ); // Correct in all cases.
+    }
+
+    // Size scaling.
+    float  size = max( 1.0e-6, Size );
+    Q /= size;
+    OutSize = SpaceSize * size;
+
+    // Compute the pattern.
+    if( 2 == NoiseDim )
+    {
+        Color = noise( NoiseType, Q.x + Variation, Q.y + Variation );
+    }
+    else if( 3 == NoiseDim )
+    {
+        Color = noise( NoiseType, Q + point(Variation) );
+    }
+    else // 4 == NoiseDim
+    {
+        Color = noise( NoiseType, Q, Variation );
+    }
+
+    // Set the outputs.
+    Float = Color.r;
+    Gray = color( Float );
+    Point = point( Color );
+    Vector = vector( 2.0*Color - color(1.0) );
+    Normal = normalize( Vector );
+}

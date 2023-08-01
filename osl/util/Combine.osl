@@ -1,0 +1,108 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+#include "util/UI.h"
+
+#define INPUT_PARAMS(L) \
+    UI_PARAMS(L), \
+\
+    int L##_Mode = 0 \
+    [[ \
+        string page = #L, \
+        string label = "Mode", \
+        string widget = "mapper", \
+        string options = "Mix:0|Mul:1|Add:2|Sub:3", \
+        string help = \
+            "<i>Mix</i> (0) blends this pattern with the others, " \
+            "which is equivalent to an <i>over</i> compositing operation. " \
+            "<i>Mul</i> (1) multiplies this pattern with the others. " \
+            "<i>Add</i> (2) sums this pattern with the others. " \
+            "<i>Sub</i> (3) subtracts this pattern from the others. " \
+    ]], \
+\
+    float L##_Mask = 1.0 \
+    [[ \
+        string page = #L, \
+        string label = "Mask", \
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0, \
+        string help = \
+            "Determines how much this pattern is combined with the others, "\
+            "or controls the <i>Mix</i> between this pattern and the others. " \
+    ]]
+
+#define COMBINE(L,result,RESULT,SIZE) \
+    if( 0 == L##_Mode ) \
+    { \
+        result = mix( result, L##_in * L##_Gain, L##_Mask ); \
+        RESULT = mix( RESULT, L##_In * L##_Gain, L##_Mask ); \
+        SIZE = mix( SIZE, L##_Size, L##_Mask ); \
+    } \
+\
+    else if( 1 == L##_Mode ) \
+    { \
+        result = mix( result, result * L##_Gain * L##_in, L##_Mask ); \
+        RESULT = mix( RESULT, RESULT * L##_Gain * L##_In, L##_Mask ); \
+\
+        float sizeL = mix( SIZE, L##_Size, L##_Gain/(L##_Gain+1.0) ); \
+        SIZE = mix( SIZE, sizeL, L##_Mask ); \
+    } \
+\
+    else if( 2 == L##_Mode ) \
+    { \
+        result = mix( result, result + L##_Gain * L##_in, L##_Mask ); \
+        RESULT = mix( RESULT, RESULT + L##_Gain * L##_In, L##_Mask ); \
+\
+        float sizeL = mix( SIZE, L##_Size, L##_Gain/(L##_Gain+1.0) ); \
+        SIZE = mix( SIZE, sizeL, L##_Mask ); \
+    } \
+\
+    else if( 3 == L##_Mode ) \
+    { \
+        result = mix( result, result - L##_Gain * L##_in, L##_Mask ); \
+        RESULT = mix( RESULT, RESULT - L##_Gain * L##_In, L##_Mask ); \
+\
+        float sizeL = mix( SIZE, L##_Size, L##_Gain/(L##_Gain+1.0) ); \
+        SIZE = mix( SIZE, sizeL, L##_Mask ); \
+    }
+
+shader util_Combine
+[[
+    int rfm_nodeid = 1234251,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Combines the patterns, from the bottom (A) up, using the specified "
+            "<b>Gain</b>, <b>Mode</b>, and <b>Mask</b> for each. "
+            "Float inputs only combine with other float inputs. "
+            "Tuple inputs only combine with other tuple inputs. "
+            "There is no crossover between them. "
+    ]],
+
+    INPUT_PARAMS(F),
+    INPUT_PARAMS(E),
+    INPUT_PARAMS(D),
+    INPUT_PARAMS(C),
+    INPUT_PARAMS(B),
+    INPUT_PARAMS(A),
+
+    output float out = 0.0,
+    output color Out = color(0.0),
+    output float Size = 0.0
+)
+{
+    COMBINE(A,out,Out,Size);
+    COMBINE(B,out,Out,Size);
+    COMBINE(C,out,Out,Size);
+    COMBINE(D,out,Out,Size);
+    COMBINE(E,out,Out,Size);
+    COMBINE(F,out,Out,Size);
+}

@@ -1,0 +1,158 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader displace_Height
+[[
+    int rfm_nodeid = 1234253,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Create LaSh Displacement (LaD) components (Nd, DeltaP, and Bulk) "
+            "from a surface <b>Height</b> pattern. "
+    ]],
+
+    float Height = 0.5
+    [[
+        string label = "Height",
+        string readOnly = "True",
+        string help =
+            "<b>Height</b> is used to displace the surface along the <b>Normal</b> "
+            "direction. "
+            "The <b>Height</b> value is assumed to range between 0 and 1, "
+            "so <b>Height</b> is first offset by &ndash;0.5 so it ranges "
+            "from &ndash;0.5 to +0.5 to produce balanced variations above "
+            "and below the surface. "
+    ]],
+
+    float HeightSize = 1.0
+    [[
+        string label = "Height Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected <b>Height</b> pattern variations. "
+    ]],
+
+    normal Normal = N
+    [[
+        string label = "Normal (N)",
+        string readOnly = "True",
+        string help =
+            "The surface <b>Normal</b> direction. "
+            "Specified in <b><i>common</i></b> space. "
+            "This defines the direction the <b>Height</b> "
+            "and <b>Offset</b> move the surface. "
+            "Uses the global surface normal <b>N</b> if not connected. "
+    ]],
+
+    float Offset = 0.0
+    [[
+        string label = "Offset",
+        int slider = 1, float slidermin = -0.5, float slidermax = 0.5,
+        string help =
+            "The <b>Height</b> value is assumed to range between 0 and 1, "
+            "so <b>Height</b> is first offset by &ndash;0.5 so it ranges "
+            "from &ndash;0.5 to +0.5 to produce balanced variations above "
+            "and below the surface. "
+            "<p>"
+            "<b>Offset</b> is then added to this new <b>Height</b> value, "
+            "allowing you to generate only peaks (<b>Offset</b> = <i>+0.5</i> ), "
+            "a combination of peaks and valleys (<b>Offset</b> = <i>0.0</i> ), "
+            "or just valleys (<b>Offset</b> = <i>&ndash;0.5</i> ) "
+            "in the displaced surface. "
+            "</p>"
+    ]],
+
+    float Magnitude = 1.0
+    [[
+        string label = "Magnitude",
+        int slider = 1, float slidermin = 0.0, float slidermax = 2.0,
+        string help =
+            "Controls the <b>Magnitude</b> of the displacement. "
+    ]],
+
+    string MagnitudeSpace = "world"
+    [[
+        int connectable = 0,
+        string label = "Magnitude Space",
+        string widget = "popup", int editable = 1,
+        string options =
+            "object"
+            "|world",
+        string help =
+            "Determines in what <b>Space</b> the units of <b>Magnitude</b> are specified: "
+            "how big is 1 unit of <b>Magnitude</b> displacement?"
+    ]],
+
+    int Invert = 0
+    [[
+        int connectable = 0,
+        string label = "Invert",
+        string widget = "checkBox",
+        string help =
+            "<b>Invert</b> the displacement pattern: high becomes low, "
+            "concave becomes convex, and vice versa. "
+    ]],
+
+    float BulkGain = 1.0
+    [[
+        string label = "Bulk Gain",
+        int slider = 1, float slidermin = 0.0, float slidermax = 2.0,
+        string help =
+            "Scales the output <b>Bulk</b> relative "
+            "to the displacement <b>Magnitude</b>. "
+            "Bulk is used when displacements Accumulate. "
+            "Useful when the input <b>Height</b> does not occupy the 0 to 1 "
+            "dymanic range of values, or simply to allow more user control "
+            "of how much accumulation bulk this displacement produces. "
+    ]],
+
+    output normal Nd = N,
+    output vector DeltaP = vector(0.0),
+    output float  Bulk = 0.0
+)
+{
+    // Invert?
+    float  height = Height;
+    if( Invert ) height =  1.0-height;
+
+    // [0,1] Height value shifts the surface ±0.5, plus the Offset.
+    height = height-0.5 + Offset;
+
+    // Displacement magnitude.
+    float  magnitude = HeightSize * Magnitude;
+
+    // Scale magnitude to common space.
+    matrix  mag_to_common;
+    if( getmatrix( MagnitudeSpace, "common", mag_to_common ))
+    {
+        magnitude *= pow( abs( determinant( mag_to_common )), (1.0/3.0) );
+    }
+    else
+    {
+        warning(
+            "Magnitude Space = \"%s\" couldn't be found. "
+            "Using \"common\" space instead. ",
+            MagnitudeSpace
+            );
+    }
+
+    // The common-space change in the surface.
+    DeltaP = Normal * height * magnitude;
+
+    // Compute the displaced surface normal.
+    point  Po = P;
+    getattribute( "builtin", "Po", Po );
+    Nd = normalize( calculatenormal( Po + DeltaP ));
+
+    // Displacement accumulation Bulk.
+    Bulk = magnitude*( 0.5 + Offset ) * BulkGain;
+}

@@ -1,0 +1,82 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader util_Pow
+[[
+    int rfm_nodeid = 1234299,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Raise the input to given <b>Exponent</b>. "
+    ]],
+
+    float in = 0.0
+    [[
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "The value whose range will be re-mapped to 0 to 1. "
+    ]],
+
+    color In = color(0.0)
+    [[
+        string help =
+            "The value whose range will be re-mapped to 0 to 1. "
+    ]],
+
+    float InSize = 1.0
+    [[
+        string label = "In Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected input. "
+            "This is simply passed through to <b>OutSize</b>. "
+    ]],
+
+    int InvertInput = 0
+    [[
+        string widget = "checkBox",
+        string label = "Invert Input",
+        string help =
+            "Invert the input value: use 1-input. "
+    ]],
+
+    float Exponent = 1.0
+    [[
+        int slider = 1, float slidermin = 0.1, float slidermax = 10.0, float slidercenter = 1.0,
+        string help =
+            "The inputs will be raised to this power. "
+    ]],
+
+    int InvertOutput = 0
+    [[
+        string widget = "checkBox",
+        string label = "Invert Output",
+        string help =
+            "Invert the output value: 1-output. "
+    ]],
+
+    output float out = 0.0,
+    output color Out = color(0.0),
+    output float OutSize = 1.0
+)
+{
+    out = select( in, 1.0-in, InvertInput );
+    Out = select( In, color(1.0)-In, InvertInput );
+
+    out = pow( out, Exponent );
+    Out = pow( Out, Exponent );
+
+    out = select( in, 1.0-in, InvertOutput );
+    Out = select( In, color(1.0)-In, InvertOutput );
+
+    OutSize = InSize;
+}

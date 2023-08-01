@@ -1,0 +1,149 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader space_3D
+[[
+    int rfm_nodeid = 1234272,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Generates 3D values that stick to the desired <b>Coordinates</b> "
+            "but are scaled to match the size of the desired <b>Size Space</b>. "
+    ]],
+
+    int DisplacedP = 0
+    [[
+        int connectable = 0,
+        string label = "Displaced P",
+        string widget = "checkBox",
+        string help =
+            "<b>Displaced P</b> determines whether to use the displaced "
+            "surface, or the original un-displaced surface. "
+            "<p>"
+            "When <i>On</i>, use the displaced surface point <b>P</b>."
+            "<br/>When <i>Off</i>, use the un-displaced surface point <b>Po</b>."
+            "</p>"
+    ]],
+
+    string Coordinates = "object"
+    [[
+        int connectable = 0,
+        string label = "Coordinates",
+        string widget = "popup", int editable = 1,
+        string options =
+            "Primitive Variable"
+            "|object"
+            "|world",
+        string help =
+            "Selects which <b>Coordinates</b> the surface points are transformed to. "
+            "This determines what the output values will <i>stick</i> to. "
+            "<p>"
+            "For pattern generation, you'll typically want a space "
+            "that moves with objects, like <i>object</i>, "
+            "or a <i>Primitive Variable</i> if the object deforms. "
+            "</p>"
+            "You may also type in the name of your own coordinate system. "
+    ]],
+
+    string PrimitiveVariable = "__Pref"
+    [[
+        int connectable = 0,
+        string label = "Primitive Variable",
+        string help =
+            "When the <b>Coordinates</b> are set to <i>Primitive Variable</i>, "
+            "use this value to specify which (point type) primitive variable to "
+            "use instead of Po or P: the output values will then stick to this "
+            "primvar. "
+            "<p>"
+            "If the given primvar cannot be found, <i>object</i> <b>Coordinates</b> "
+            "will be used. "
+            "</p>"
+    ]],
+
+    string SizeSpace = "world"
+    [[
+        int connectable = 0,
+        string label = "Size Space",
+        string widget = "popup", int editable = 1,
+        string options =
+            "object"
+            "|world",
+        string help =
+            "Determines the <b>Size</b> of the resulting variations. "
+            "<p>"
+            "For example, <i>object</i> <b>Coordinates</b> are fixed to each geometric object. "
+            "So one instance of an object that's scaled differently from other instances "
+            "will produce a pattern size that is scaled to match that object's scale. "
+            "</p>"
+            "However, specifying a globally uniform space here (such as <i>world</i> "
+            "or your own coordinate system) will ensure that pattern sizes match "
+            "the <b>Size Space</b> regardless of what <b>Coordinates</b> are chosen "
+            "or how an object has been transformed in the scene. "
+            "<p>"
+            "You may also type in the name of your own coordinate system. "
+            "</p>"
+    ]],
+
+    output point Out = point(0),
+    output float OutSize = 1.0
+)
+{
+    // Referencing P is required for any down-stream auto-differentiation.
+    Out = P;
+
+    // Replace with un-displaced P?
+    if( !DisplacedP ) getattribute( "builtin", "Po", Out );
+
+    // Check for "Primitive Variable" Coordinates.
+    if( "Primitive Variable" == Coordinates )
+    {
+        if( !getattribute( "primvar", PrimitiveVariable, Out ))
+        {
+            warning(
+                "The point-type Primitive Variable = \"%s\" wasn't found. "
+                "Using %s \"object\" Coordinates instead.",
+                PrimitiveVariable,
+                DisplacedP ? "displaced" : "un-displaced"
+                );
+        }
+    }
+
+    // Restore the original primvar values,
+    // or start with "object" Coordinates.
+    Out = transform( "common", "object", Out );
+
+    // Use Coordinates space.
+    if( "Primitive Variable" != Coordinates )
+    {
+        matrix  object_to_coord;
+        if( getmatrix( "object", Coordinates, object_to_coord ))
+        {
+            // Transform to Coordinates.
+            Out = transform( object_to_coord, Out );
+
+            // Apply SizeSpace scale.
+            matrix  coord_to_size;
+            if( getmatrix( Coordinates, SizeSpace, coord_to_size ))
+            {
+                Out *= pow( abs( determinant( coord_to_size )), 0.33333333 );
+            }
+            else
+            {
+                warning( "Size Space = \"%s\" wasn't found.", SizeSpace );
+            }
+        }
+        else
+        {
+            warning( "Coordinates = \"%s\" wasn't found. Using \"object\" space.", Coordinates );
+        }
+    }
+}

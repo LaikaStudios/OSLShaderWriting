@@ -1,0 +1,335 @@
+/*
+ *  Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This program may not be copied, modified, or distributed except according to those terms.
+ */
+shader texture_2D
+[[
+    int rfm_nodeid = 1234275,
+    string rfm_classification = "rendernode/RenderMan/pattern/Laika"
+]]
+(
+    string Notes = ""
+    [[
+        int connectable = 0,
+        string help =
+            "Reads 2D texture data from the given <b>File</b> and returns its results. "
+            "This is assumed to contain 1(R), 2(RA), 3(RGB), or 4(RGBA) "
+            "channels of information. "
+    ]],
+
+    point Space = point(0.0)
+    [[
+        string label = "Space (st)",
+        string readOnly = "True",
+        string help =
+            "When connected, the <b>Space</b>  value's <i>x</i> and <i>y</i> "
+            "components will define the texture mapping space. "
+            "<p>"
+            "Otherwise, the <code>st</code> primvar values (a.k.a. Texture Mapping UV's) "
+            "will be used if they exits, or the geometric <code>uv</code> space if they do not. "
+            "</p>"
+    ]],
+
+    float SpaceSize = 1.0
+    [[
+        string label = "Space Size",
+        string readOnly = "True",
+        string help =
+            "The <b>Size</b> of the connected <b>Space</b>. "
+    ]],
+
+    string File = ""
+    [[
+        string widget = "assetIdInput",
+        string assetTypeTags = "texture",
+        string fileTypes = "tex",
+        string options = "texture",
+        string help =
+            "The name of the 2D texture <b>File</b> to use. "
+            "This is assumed to contain 1(R), 2(RA), 3(RGB), or 4(RGBA) "
+            "channels of information. "
+            "<p>"
+            "If you are using a set of UV Index/Atlas textures, you must put "
+            "the proper filename token in the <b>File</b> string at the location "
+            "where the UV Index value(s) should be inserted. "
+            "</p>"
+            "For example, Mari UDIM texture files will have names like: "
+            "<br/><tt>/path/to/my/texture_file.1001.tex</tt>, "
+            "<br/><tt>/path/to/my/texture_file.1002.tex</tt>, "
+            "<br/>etc. "
+            "<p>"
+            "To apply the correct texture on the correct object patches, you would "
+            "specify <tt>/path/to/my/texture_file.<b><i>&lt;udim&gt;</i></b>.tex</tt> "
+            "as the <b>File</b> string in order to indicate where the Mari style UDIM "
+            "texture index number should be inserted. "
+            "Use <b><i>&lt;u&gt;</i></b> and <b><i>&lt;v&gt;</i></b> "
+            "to indicate where Z-Brush style indices should be inserted, "
+            "or <b><i>&lt;U&gt;</i></b> and <b><i>&lt;V&gt;</i></b> "
+            "to indicate where Mudbox style indices should be inserted. "
+            "</p>"
+    ]],
+
+    float FilePatternSize = 0.1
+    [[
+        string label = "File Pattern Size",
+        int slider = 1, float slidermin = 0.01, float slidercenter = 0.1, float slidermax = 1.0,
+        string help =
+            "The <b>Size</b> of the <b>Pattern</b> contained in the texture <b>File</b>. "
+            "This value is relative to the texture access space, which is one unit over "
+            "the entire texture map. It is likely the pattern contained in the texture "
+            "varies many times within the 2D texture, so its <b>Pattern Size</b> will "
+            "be small relative to the entire texture access space. "
+    ]],
+
+    int TextureAccess_Filtering = 1
+    [[
+        int connectable = 0,
+        string page = "Texture Access",
+        string label = "Filtering",
+        string widget = "checkBox",
+        string help =
+            "Turns anti-alias <b>Filtering</b> <i>On</i>/<i>Off</i>. "
+            "The default is <i>On</i>. "
+            "<p>"
+            "Normally, any camera viewing distance and/or scaling of the texture's mapping onto "
+            "the surface will alter the filter size used when accessing the texture data. "
+            "This is the correct anti-aliasing behavior for simple texture pattern use. "
+            "However, when the texture is not used in a typical way, such as producing a shading normal, "
+            "this anti-aliasing results in incorrect shading, since the surface normal distribution "
+            "will be altered by such filtering. "
+            "</p>"
+            "When <i>On</i>, the texture filtering is based on the texture's size in the rendered image, "
+            "and so will be correctly anti-aliased when the result is used for simple color or other "
+            "variations. "
+            "<p>"
+            "When <i>Off</i>, the texture is point sampled. For shading normals, this "
+            "results in a consistent response at all camera view distances "
+            "and texture mapping scales, as it correctly preserves the original normal distribution. "
+            "</p>"
+    ]],
+
+    int TextureAccess_FilterType = 1
+    [[
+        int connectable = 0,
+        string page = "Texture Access",
+        string label = "Filter Type",
+        string widget = "mapper",
+        string options =
+            "Linear:0"
+            "|Smart Cubic:1",
+        string help =
+            "Used when <b>Filtering</b> is <i>On</i>, and for the <b>Average Blur</b>. "
+            "Sets the type of texture access filter to use. "
+    ]],
+
+    float TextureAccess_Blur = 0.0
+    [[
+        string page = "Texture Access",
+        string label = "Blur",
+        int slider = 1, float slidermin = 0.0, float slidermax = 0.01,
+        string help =
+            "Used when <b>Filtering</b> is <i>On</i>. "
+            "Sets the lower bound of the texture filter size in texture-space units: "
+            "sets the minimum sampled texture area. "
+            "<p>"
+            "Note: texture file dimensions are normalized to range from 0 to 1."
+            "</p>"
+    ]],
+
+    float TextureAccess_AvgBlur = 1.0
+    [[
+        string page = "Texture Access",
+        string label = "Avg Blur",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "Sets the lower bound of the texture filter size in "
+            "texture-space units for the texture's Average (<b>Avg</b>) "
+            "value outputs: sets the minimum sampled texture area to use. "
+            "<p>"
+            "Note: texture file dimensions are normalized to range from 0 to 1."
+            "</p>"
+    ]],
+
+    int TextureAccess_SWrap = 0
+    [[
+        int connectable = 0,
+        string page = "Texture Access",
+        string label = "S Wrap",
+        string widget = "mapper",
+        string options =
+            "default:0"
+            "|clamp:1"
+            "|periodic:2"
+            "|mirror:3",
+        string help =
+            "Can override the texture wrap mode built into the texture file by the "
+            "<a href='https://rmanwiki.pixar.com/display/REN25/txmake'>txmake</a> "
+            "command when the texture was made (the <i>default</i>). "
+            "Unlike the baked-in wrap modes, this might introduce filtering "
+            "artifacts at the texture borders. "
+            "<p>"
+            "Note: ignored when a UV Index/Atlas texture <b>File</b> is specified. "
+            "</p>"
+    ]],
+
+    int TextureAccess_TWrap = 0
+    [[
+        int connectable = 0,
+        string page = "Texture Access",
+        string label = "T Wrap",
+        string widget = "mapper",
+        string options = "default:0|clamp:1|periodic:2|mirror:3",
+        string help =
+            "Can override the texture wrap mode built into the texture file by the "
+            "<a href='https://rmanwiki.pixar.com/display/REN25/txmake'>txmake</a> "
+            "command when the texture was made (the <i>default</i>). "
+            "Unlike the baked-in wrap modes, this might introduce filtering "
+            "artifacts at the texture borders. "
+            "<p>"
+            "Note: ignored when a UV Index/Atlas texture <b>File</b> is specified. "
+            "</p>"
+    ]],
+
+    color MissingFile_RGB = color(1,0,0)
+    [[
+        string page = "Missing File",
+        string label = "RGB",
+        string help =
+            "If you specify a <b>File</b> that can't be found, "
+            "or if you don't specify one at all, these <b>RGB</b> "
+            "values will be returned. "
+    ]],
+
+    float MissingFile_A = 1.0
+    [[
+        string page = "Missing File",
+        string label = "A",
+        int slider = 1, float slidermin = 0.0, float slidermax = 1.0,
+        string help =
+            "If you specify a <b>File</b> that can't be found, "
+            "or if you don't specify one at all, this <b>A</b> "
+            "value will be returned. "
+    ]],
+
+    output color RGB = color(0.0),
+    output color RGBAvg = color(0.0),
+
+    output float R = 0.0,
+    output float G = 0.0,
+    output float B = 0.0,
+
+    output float A = 0.0,
+    output float AAvg = 0.0,
+
+    output float  OutSize = 1.0,
+
+    // Will read the 'st' primvar, or sets (s,t) = (u,v) if there is none.
+    float  s = 0.0 [[ int lockgeom = 0, int connectable = 0, string widget = "null" ]],
+    float  t = 0.0 [[ int lockgeom = 0, int connectable = 0, string widget = "null" ]]
+)
+{
+    // Texture mapping space.
+    point  xy = Space;
+    if( !isconnected( Space )) xy = point(s,t,0);
+
+    // Check for indexing tokens in the File string.
+    // Why isn't this part of gettextureinfo()?
+    int  udim = regex_search( File, "<udim>" ) || regex_search( File, "<UDIM>" );
+    int  uv = regex_search( File, "<u>" ) && regex_search( File, "<v>" );
+    int  UV = regex_search( File, "<U>" ) && regex_search( File, "<V>" );
+    int  uv_index = udim || uv || UV;
+
+    // Fix the orientation for RenderMan .tex file access.
+    // This requires separately re-orienting each individual
+    // atlased texture region.
+    if( uv_index )
+    {
+        float  index = floor(xy.y);
+        xy.y = 1 - (xy.y - index) + index;
+    }
+
+    // Override the wrap modes?
+    else
+    {
+        if( 0 != TextureAccess_SWrap )
+        {
+            if( 1 == TextureAccess_SWrap ) xy.x = clamp( xy.x, 0, 1 );
+            else if( 2 == TextureAccess_SWrap ) xy.x = xy.x - floor(xy.x);
+            else if( 3 == TextureAccess_SWrap )
+            {
+                int  index = int( floor(xy.x) );
+                xy.x = (index % 2) ? index - xy.x + 1 : xy.x - index;
+            }
+        }
+        if( 0 != TextureAccess_TWrap )
+        {
+            if( 1 == TextureAccess_TWrap ) xy.y = clamp( xy.y, 0, 1 );
+            else if( 2 == TextureAccess_TWrap ) xy.y = xy.y - floor(xy.y);
+            else if( 3 == TextureAccess_TWrap )
+            {
+                int  index = int( floor(xy.y) );
+                xy.y = (index % 2) ? index - xy.y + 1 : xy.y - index;
+            }
+        }
+
+        // Fix RenderMan .tex file orientation.
+        xy.y = 1 - xy.y;
+    }
+
+
+    // Initialize outputs.
+    RGB = RGBAvg = MissingFile_RGB;
+    A = AAvg = MissingFile_A;
+
+    // Check the existence of the texture file.
+    int  exists = 0;
+    gettextureinfo( File, "exists", exists );
+
+    // Number of channels.
+    int  channels = 0;
+    gettextureinfo( File, "channels", channels );
+
+    // Texture access controls.
+    // Note: using "closest" will preclude derivative functionality of the results.
+    string  interp = TextureAccess_FilterType != 0 ? "smartcubic" : "linear";
+
+    if( exists )
+    {
+        RGB = texture( File, xy.x, xy.y,
+                "interp", interp,
+                "blur", TextureAccess_Blur,
+                "alpha", A
+                );
+
+        RGBAvg = texture( File, xy.x, xy.y,
+                "interp", interp,
+                "blur", TextureAccess_AvgBlur,
+                "alpha", AAvg
+                );
+
+        // Texture has one or two channels.
+        if( channels < 3 )
+        {
+            RGB = color( RGB[0] );
+            RGBAvg = color( RGBAvg[0] );
+
+            // Two channels: alpha is the second.
+            if( 1 < channels )
+            {
+                A = RGB[1];
+                AAvg = RGBAvg[1];
+            }
+        }
+    }
+
+    // Set the remaining outputs.
+    R = RGB.r;
+    G = RGB.g;
+    B = RGB.b;
+
+    OutSize = SpaceSize*FilePatternSize;
+}
