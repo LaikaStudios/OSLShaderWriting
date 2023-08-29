@@ -59,13 +59,4 @@ In this way, you can edit a source file and execute `make` from within the osl d
     export RMAN_SHADERPATH="${HOME}/OSLShaderWriting/build/${RMAN_VERSION}/shaders:${RMAN_SHADERPATH}"
     ```
 
-# License
-This repository's content is licensed under either the
-
-* Apache License, Version 2.0, ([LICENSE-APACHE](../LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0) or
-* MIT license ([LICENSE-MIT](../LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.
-
-
 
