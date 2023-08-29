@@ -17,7 +17,7 @@ Documentation is in the [`doc`](doc) directory.
 Please feel free to use the [Discussions Tab](https://github.com/LaikaStudios/OSLShaderWriting/discussions).
 I'd love you hear what you think, or to discuss any issues or thoughts you may have about the course or this repository and its contents.
 
-## License
+# License
 This repository's content is licensed under either the
 
 * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0) or
