@@ -18,7 +18,7 @@ To use the supplied repository content as is:
 
 1. Set up RenderMan:
 
-    * Install [RenderManProServer](https://renderman.pixar.com/store) and ensure it is functioning properly.
+    * [Install RenderManProServer](https://renderman.pixar.com/store) and ensure it is functioning properly.
 
 1. Set these environment variables appropriately. These are required by the [make](https://www.gnu.org/software/make/manual/) system that's used to compile and install the shaders:
     * PIXAR_ROOT
@@ -49,7 +49,7 @@ In this way, you can edit a source file and execute `make` from within the osl d
     `make clean` and `make help` can also be executed from either the top-level directory or the osl directory.
 `make clean` removes the built shaders, and `make help` provides additional information about the make system and how it's controlled.
 
-1. Set these environment variables appropriately. This is required so the built shaders can be found by [RenderMan](https://rmanwiki.pixar.com/display/REN24/RenderMan) and a [RenderMan Bridge Application](https://renderman.pixar.com/bridge-tools):
+1. Set these environment variables appropriately. This is required so the built shaders can be found by [RenderMan](https://rmanwiki.pixar.com/display/REN25/RenderMan) and a [RenderMan Bridge Application](https://renderman.pixar.com/bridge-tools):
 
     - RMAN_SHADERPATH
 
