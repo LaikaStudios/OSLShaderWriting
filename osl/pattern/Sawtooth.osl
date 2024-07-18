@@ -6,12 +6,10 @@
  *
  *  This file may not be copied, modified, or distributed except according to those terms.
  */
-shader pattern_Noise
+shader pattern_Sawtooth
 (
-    point  Space = point(0.0),
-    float  Size = 1.0,
-    string Type = "cell",
-    float  Variation = 0.0,
+    point Space = point(0.0),
+    float Size = 1.0,
 
     output color RGB = color(0.0)
 )
@@ -26,5 +24,11 @@ shader pattern_Noise
         Q = transform( "common", "object", Q );
     }
 
-    RGB = noise( Type, Q, Variation );
+    // Size scaling.
+    Q /= max( 0.00001, Size );
+
+    // Sawtooth: Q-floor(Q) ≡ mod(Q,1).
+    Q = Q-floor(Q);
+
+    RGB = color( Q );
 }

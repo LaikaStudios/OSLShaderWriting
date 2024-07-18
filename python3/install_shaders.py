@@ -1,5 +1,5 @@
 #
-#   Copyright 2023 Laika, LLC. Authored by Mitch Prater.
+#   Copyright 2024 LAIKA. Authored by Mitch Prater.
 # 
 #   Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
 #   or the MIT license http://opensource.org/licenses/MIT, at your option.

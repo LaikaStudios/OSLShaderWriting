@@ -1,0 +1,39 @@
+/*
+ *  Copyright 2024 LAIKA. Authored by Mitch Prater
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This file may not be copied, modified, or distributed except according to those terms.
+ */
+shader space_Shear
+(
+    point In = point(0),
+
+    int Axis = 0, // 0 = X, 1 = Y, 2 = Z
+    float Shear = 0.5,
+
+    output point Out = point(0)
+)
+{
+    // Initialize the 3d space.
+    if( isconnected( In )) Out = In;
+    else Out = transform( "common", "object", P );
+
+    // Orthographic projections.
+    if( 0 == Axis )
+    {
+        Out = point( Out.y, Out.z, 0.0 );
+    }
+    else if( 1 == Axis )
+    {
+        Out = point( Out.x, Out.z, 0.0 );
+    }
+    else if( 2 == Axis )
+    {
+        Out = point( Out.x, Out.y, 0.0 );
+    }
+
+    // Add Shear.
+    Out += Shear * vector( Out.z, Out.z, 0.0 );
+}

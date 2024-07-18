@@ -1,5 +1,5 @@
 #
-#   Copyright 2022-2023 Laika, LLC. Authored by Mitch Prater.
+#   Copyright 2024 LAIKA. Authored by Mitch Prater.
 # 
 #   Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
 #   or the MIT license http://opensource.org/licenses/MIT, at your option.
@@ -31,7 +31,7 @@ RMANTREE ?= $(PIXAR_ROOT)/RenderManProServer-$(RMAN_VERSION)
 # SUBDIRS and EXCLUDE control variables determine which .osl files are made.
 #
 # These directories will be searched for .osl files.
-SUBDIRS := convert data displace dot osl pattern space texture trace util
+SUBDIRS := builtin common convert coordinate displace global modify pattern primvar space texture world
 
 # These shaders won't be built: directory/basename
 EXCLUDE := 
@@ -91,10 +91,7 @@ INCLUDE = -I. -I./include
 #
 
 # Individual dependencies.
-util/Add.osl : util/UI.h
-util/Mix.osl : util/UI.h
-util/Mul.osl : util/UI.h
-util/Sub.osl : util/UI.h
+# foobar/Shader.osl : foobar/Header.h
 
 %.oso : %.osl
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $<
@@ -120,7 +117,7 @@ help:
 	@ echo "PIXAR_ROOT must be set to the location of the RenderMan installation:"
 	@ echo "e.g. /opt/pixar"
 	@ echo "RMAN_VERSION must be set to the RenderMan version you wish to make:"
-	@ echo "e.g. 25.0"
+	@ echo "e.g. 26.1"
 	@ echo ""
 	@ echo "Current settings:"
 	@ echo "PIXAR_ROOT: $(PIXAR_ROOT)"

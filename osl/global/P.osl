@@ -6,17 +6,13 @@
  *
  *  This file may not be copied, modified, or distributed except according to those terms.
  */
-shader space_Warp
+shader global_P
 (
-    point In = point(0.0),
-
-    vector Vector = vector(0.0),
-    int    ExpandRange = 0,
-    float  Magnitude = 0.5,
-
-    output point Out = point(0.0)
+    output color P_color = color(0.0)
 )
 {
-    vector dir = select( Vector, 2*Vector-vector(1), ExpandRange );
-    Out = In + dir*Magnitude;
+    point P_object;
+    P_object = transform( "common", "object", P );
+
+    P_color = P_object - floor( P_object );
 }

@@ -1,0 +1,124 @@
+/*
+ *  Copyright 2024 LAIKA. Authored by Mitch Prater
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This file may not be copied, modified, or distributed except according to those terms.
+ */
+shader pattern_Occlusion
+(
+    vector TraceDirection = vector(0.0),
+    float  TraceBias = 0.0,
+    string TraceSet = "",
+
+    int   Samples = 16,
+    float MaxDist = 1.0,
+    float Contrast = 0.5,
+
+    output float  Occlusion = 0.0,
+    output float  Dirt = 0.0,
+    output float  Wear = 0.0,
+    output vector BentNormal = vector(0.0)
+)
+{
+    // Trace direction.
+    vector Dn = N;
+
+    if( isconnected(TraceDirection) || vector(0.0) != TraceDirection )
+    {
+        Dn = normalize( TraceDirection );
+    }
+
+    // Duff, T. et. al. 2017
+    // Building an Orthonormal Basis, Revisited
+    // Journal of Computer Graphics Techniques Vol. 6, No. 1
+    // http://jcgt.org/published/0006/01/01/
+    vector Tn, Bn;
+    {
+        float signz = select( -1, 1, 0.0 <= Dn.z );
+        float a = -1.0 / ( signz + Dn.z );
+        Bn = vector( a*Dn.x*Dn.y, signz + a*Dn.y*Dn.y, -Dn.y );
+        Tn = vector( 1.0 + a*signz*Dn.x*Dn.x, signz*Bn.x, -signz*Dn.x );
+    }
+
+    // Trace bias.
+    float bias = 0.0001;
+
+    if( isconnected(TraceBias) || 0.0 != TraceBias )
+    {
+        bias = TraceBias;
+    }
+    else
+    {
+        int autobias = 0;
+        getattribute( "trace:autobias", autobias );
+
+        if( autobias ) getattribute( "builtin", "biasR", bias );
+        else getattribute( "trace:bias", bias );
+    }
+
+    // Trace set.
+    string traceset = TraceSet;
+
+    if( "*" == TraceSet )
+    {
+        getattribute( "identifier:name", traceset );
+    }
+    else if( "-*" == TraceSet )
+    {
+        getattribute( "identifier:name", traceset );
+        traceset = concat( "-", traceset );
+    }
+
+    // Trace samples and accumulate the results.
+    float  hits = 0;
+    float  hitdists = 0;
+    vector missdirs = vector(0);
+
+    for( int i=0; i < Samples; i++ )
+    {
+        // Generate a uniform sample direction
+        // in the positive Dn hemisphere only.
+        vector dir;
+        {
+            point xi = hashnoise( P, float(i) ); // ξ : [0,1)
+
+            float phi = xi.x * M_2PI; // 0 ≤ φ < 2π
+            float sinphi, cosphi;
+            sincos( phi, sinphi, cosphi );
+
+            float z = xi.y;
+            float sintheta = sqrt( 1.0 - z*z ); // 0 ≤ θ < π
+
+            float x = sintheta * cosphi;
+            float y = sintheta * sinphi;
+
+            dir = x*Tn + y*Bn + z*Dn;
+        }
+
+        // Trace the sample ray.
+        int hit = trace( P, dir,
+                        "mindist", bias,
+                        "maxdist", MaxDist,
+                        "traceset", traceset
+                        );
+
+        // Accumulate the results.
+        hits += hit;
+        missdirs += (1-hit) * dir;
+
+        float hitdist;
+        getmessage( "trace", "hitdist", hitdist );
+        hitdists += hitdist;
+    }
+    // End Samples loop.
+
+    // Set the outputs.
+    Occlusion = hits / Samples;
+
+    Dirt = linearstep( 0.0, 1.0-Contrast, Occlusion );
+    Wear = 1.0 - Dirt;
+
+    BentNormal = normalize( missdirs );
+}

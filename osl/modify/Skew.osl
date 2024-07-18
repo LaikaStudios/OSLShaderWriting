@@ -1,0 +1,29 @@
+/*
+ *  Copyright 2024 LAIKA. Authored by Mitch Prater
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This file may not be copied, modified, or distributed except according to those terms.
+ */
+shader modify_Skew
+(
+    float in = 0.5,
+    color In = color(0.5),
+
+    float Center = 0.5, // 0 ≤ Center ≤ 1
+
+    output float out = 0.0,
+    output color Out = color(0.0)
+)
+{
+    float expon = -log(Center) / log(2);
+
+    out = select( pow( in, expon ), in, in <= 0.0 || 1.0 <= in );
+
+    Out = color(
+            select( pow( In.r, expon ), In.r, In.r <= 0.0 || 1.0 <= In.r ),
+            select( pow( In.g, expon ), In.g, In.g <= 0.0 || 1.0 <= In.g ),
+            select( pow( In.b, expon ), In.b, In.b <= 0.0 || 1.0 <= In.b )
+            );
+}

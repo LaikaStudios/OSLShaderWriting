@@ -6,17 +6,13 @@
  *
  *  This file may not be copied, modified, or distributed except according to those terms.
  */
-shader space_Warp
+shader primvar_st
 (
-    point In = point(0.0),
+    float s = u [[int lockgeom=0]],
+    float t = v [[int lockgeom=0]],
 
-    vector Vector = vector(0.0),
-    int    ExpandRange = 0,
-    float  Magnitude = 0.5,
-
-    output point Out = point(0.0)
+    output color st_color = color(0.0)
 )
 {
-    vector dir = select( Vector, 2*Vector-vector(1), ExpandRange );
-    Out = In + dir*Magnitude;
+    st_color = color( s, t, 0 );
 }

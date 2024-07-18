@@ -6,17 +6,15 @@
  *
  *  This file may not be copied, modified, or distributed except according to those terms.
  */
-shader space_Warp
+shader convert_FloatToColor
 (
-    point In = point(0.0),
+    float Gain = 1.0,
+    float R = 1.0,
+    float G = 1.0,
+    float B = 1.0,
 
-    vector Vector = vector(0.0),
-    int    ExpandRange = 0,
-    float  Magnitude = 0.5,
-
-    output point Out = point(0.0)
+    output color Color = color( 0.0 )
 )
 {
-    vector dir = select( Vector, 2*Vector-vector(1), ExpandRange );
-    Out = In + dir*Magnitude;
+    Color = Gain * color( R, G, B );
 }

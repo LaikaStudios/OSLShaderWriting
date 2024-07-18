@@ -1,0 +1,35 @@
+/*
+ *  Copyright 2024 LAIKA. Authored by Mitch Prater
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This file may not be copied, modified, or distributed except according to those terms.
+ */
+shader modify_Clamp
+(
+    float in = 0.5,
+    color In = color(0.5),
+
+    float TransitionWidth = 0.2,
+    float Clamp = 1.0,
+
+    output float out = 0.0,
+    output color Out = color(0.0)
+)
+{
+    float width = 0.5 * TransitionWidth;
+
+    // Clamp the inputs.
+    float inClamp = smooth_linearstep( 0.0, 1.0, in, width );
+
+    color InClamp = color(
+            smooth_linearstep( 0.0, 1.0, In.r, width ),
+            smooth_linearstep( 0.0, 1.0, In.g, width ),
+            smooth_linearstep( 0.0, 1.0, In.b, width )
+            );
+
+    // Clamp amount.
+    out = mix( in, inClamp, Clamp );
+    Out = mix( In, InClamp, Clamp );
+}

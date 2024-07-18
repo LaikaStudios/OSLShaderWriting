@@ -1,0 +1,74 @@
+/*
+ *  Copyright 2024 LAIKA. Authored by Mitch Prater
+ *
+ *  Licensed under the Apache License Version 2.0 http://apache.org/licenses/LICENSE-2.0,
+ *  or the MIT license http://opensource.org/licenses/MIT, at your option.
+ *
+ *  This file may not be copied, modified, or distributed except according to those terms.
+ */
+shader texture_Read
+(
+    string File = "",
+    point Space = point(0.0),
+
+    float s = u [[ int lockgeom = 0 ]],
+    float t = v [[ int lockgeom = 0 ]],
+
+    output color RGB = color(0.0),
+    output float R = 0.0,
+    output float G = 0.0,
+    output float B = 0.0,
+    output float A = 0.0
+)
+{
+    // Texture mapping space.
+    point xy = point(s, t, 0);
+
+    if( isconnected( Space )) xy = Space;
+
+    // Check for indexing tokens in the File string.
+    int udim = regex_search( File, "<udim>" ) || regex_search( File, "<UDIM>" );
+    int uv = regex_search( File, "<u>" ) && regex_search( File, "<v>" );
+    int UV = regex_search( File, "<U>" ) && regex_search( File, "<V>" );
+    int uv_index = udim || uv || UV;
+
+    // Flip the orientation for RenderMan .tex file access.
+    // This requires re-orienting each indexed UV region separately.
+    if( uv_index )
+    {
+        float index = floor(xy.y);
+        xy.y = 1 - (xy.y - index) + index;
+    }
+    else
+    {
+        xy.y = 1 - xy.y;
+    }
+
+    // Simultaneously check for the existence of and
+    // the number of channels in the texture file.
+    int channels = 0;
+    int exists = gettextureinfo( File, "channels", channels );
+
+    if( exists )
+    {
+        RGB = texture( File, xy.x, xy.y, "alpha", A );
+
+        // The file is assumed to contain 1(R), 2(RA),
+        // 3(RGB), or 4(RGBA) channels of information.
+        if( channels < 3 )
+        {
+            RGB = color( RGB[0] );
+
+            // Two channels: alpha is the second.
+            if( 1 < channels )
+            {
+                A = RGB[1];
+            }
+        }
+    }
+
+    // Set the remaining outputs.
+    R = RGB.r;
+    G = RGB.g;
+    B = RGB.b;
+}
