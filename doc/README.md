@@ -11,7 +11,7 @@ However, here is some additional information about this repositry's content and 
 * [python](https://www.python.org/)
 * [RenderMan](https://rmanwiki.pixar.com/display/REN) was used to develop the shaders and the build system.
 
-Other rendering and application systems can still make use of the [`osl`](./osl/) shading nodes with little or no changes.
+Other rendering and application systems can still make use of the [`osl`](../osl/) shading nodes with little or no changes.
 
 While a Linux system was used to develop this repository's content, as long as a `make` command and `python` are available, any necessary modifications to the Makefiles and python installation script should be minor or non-existent.
 
