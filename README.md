@@ -1,8 +1,7 @@
 ![OSLShaderWriting](media/OSLShaderWritingTitleSlide.png)
 
 This repository contains the
-[Siggraph 2024](https://s2024.conference-program.org/presentation/?id=gensub_147&sess=sess165)
-[Shader Writing in Open Shading Language](https://dl.acm.org/conference/siggraph/proceedings)
+[Siggraph 2024 Shader Writing in Open Shading Language](https://s2024.conference-program.org/presentation/?id=gensub_147&sess=sess165)
 course supplementary material.
 [Open Shading Language](https://github.com/AcademySoftwareFoundation/OpenShadingLanguage) is a project of the [Academy Software Foundation](https://www.aswf.io/projects).
 
