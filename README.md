@@ -6,7 +6,7 @@ course supplementary material.
 [Open Shading Language](https://github.com/AcademySoftwareFoundation/OpenShadingLanguage) is a project of the [Academy Software Foundation](https://www.aswf.io/projects).
 
 
-Specifically, this repository will (soon) contain [`osl`](osl) source code for the shaders and the [make](https://www.gnu.org/software/make/) and [python](https://www.python.org/) based build system desribed in the course.
+Specifically, this repository contains the [`osl`](osl) source code for the shaders and the [make](https://www.gnu.org/software/make/) and [python](https://www.python.org/) based build system desribed in the course.
 
 Documentation is in the [`doc`](doc) directory.
 
