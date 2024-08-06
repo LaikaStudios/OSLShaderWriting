@@ -2,7 +2,7 @@
 
 ![RepresentativeImage](../media/RepresentativeImage.png)
 
-The documenation for this repository is the [Siggraph 2024](https://s2024.conference-program.org/presentation/?id=gensub_147&sess=sess165) course itself: [Shader Writing in Open Shading Language]().
+The documenation for this repository is the [Siggraph 2024 course itself: Shader Writing in Open Shading Language](https://s2024.conference-program.org/presentation/?id=gensub_147&sess=sess165).
 
 However, here is some additional information about this repositry's content and how to make use of it.
 
