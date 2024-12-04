@@ -23,3 +23,6 @@ This repository's content is licensed under either the
 
 at your option.
 
+# Notice
+The [Shader Writing in Open Shading Language](https://www.routledge.com/Shader-Writing-in-Open-Shading-Language-with-RenderManr-Examples/Prater/p/book/9781032421100)
+book is now available, which covers all the material in this course in far greater detail and contains much more content.
